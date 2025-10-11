@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Triplo Meteo</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- <div class="header"></div> -->
+
+<!-- TAB BAR MOBILE -->
+<div class="tab-bar">
+  <button data-index="0" class="active">3BMeteo</button>
+  <button data-index="1">Meteo AM</button>
+  <button data-index="2">IlMeteo</button>
+</div>
+
+<!-- FLOATING BUTTON -->
+<div id="settings">
+  <img src="icons/gear.png" alt="Imposta città">
+</div>
+
+<!-- IFRAME -->
+<div class="container">
+  <iframe id="frame1" src=""></iframe>
+  <iframe id="frame2" src=""></iframe>
+  <iframe id="frame3" src=""></iframe>
+</div>
+
+<!-- MODALE -->
+<div id="modal">
+  <div id="modalContent">
+    <h3>Inserisci la città</h3>
+    <input type="text" id="cityInput" placeholder="Inserisci città">
+    <button id="saveCity">Salva</button>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
