@@ -42,12 +42,20 @@ tabs.forEach(tab => {
   });
 });
 
-function showIframeResponsive(){
-  if (window.innerWidth <= 768) {
-    frames.forEach((f, i) => f.el.style.display = (i === 0) ? 'block' : 'none');
+function showIframeResponsive() {
+  const isMobile = window.innerWidth <= 768;
+  const activeTab = document.querySelector('.tab-bar button.active');
+  const activeIndex = activeTab ? parseInt(activeTab.dataset.index) : 0;
+
+  if (isMobile) {
+    // Mostra solo l'iframe del tab attivo
+    frames.forEach((f, i) => f.el.style.display = (i === activeIndex) ? 'block' : 'none');
   } else {
+    // Mostra tutti gli iframe su desktop
     frames.forEach(f => f.el.style.display = 'block');
   }
 }
+
 window.addEventListener('resize', showIframeResponsive);
 showIframeResponsive();
+
