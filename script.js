@@ -59,3 +59,6 @@ function showIframeResponsive() {
 window.addEventListener('resize', showIframeResponsive);
 showIframeResponsive();
 
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./service-worker.js');
+}
