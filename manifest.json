@@ -10,13 +10,22 @@
   "icons": [
     {
       "src": "icons/icon.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "icons/icon.png",
-      "sizes": "512x512",
+      "sizes": "1024x1024",
       "type": "image/png"
     }
-  ]
+  ],
+  "screenshots": [
+  {
+    "src": "screenshots/mobile1.png",
+    "sizes": "488x524",
+    "type": "image/png"
+  },
+  {
+    "src": "screenshots/desktop1.png",
+    "sizes": "1865x952",
+    "type": "image/png",
+    "form_factor": "wide"
+  }
+]
+
 }
