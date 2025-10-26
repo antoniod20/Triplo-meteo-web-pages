@@ -1,6 +1,6 @@
 const frames = [
   {el: document.getElementById('frame1'), url: 'https://www.3bmeteo.com/meteo/{city}'},
-  {el: document.getElementById('frame2'), url: 'https://www.google.com/search?q=meteo+barletta&sca_esv=07cdbffa48f41bdb&igu=1'},
+  {el: document.getElementById('frame2'), url: 'https://www.google.com/search?q=meteo+{city}&sca_esv=07cdbffa48f41bdb&igu=1'},
   {el: document.getElementById('frame3'), url: 'https://www.ilmeteo.it/meteo/{city}'}
 ];
 
