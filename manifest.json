@@ -1,6 +1,6 @@
 {
-  "name": "Triplo Meteo",
-  "short_name": "TriploMeteo",
+  "name": "Tripolemme",
+  "short_name": "TripolM",
   "description": "Visualizza tre siti meteo per la tua città preferita in un'unica pagina.",
   "start_url": "./index.html",
   "display": "standalone",

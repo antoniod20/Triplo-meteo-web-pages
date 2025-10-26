@@ -1,6 +1,6 @@
 {
-  "name": "Triplo Meteo",
-  "short_name": "TriploMeteo",
+  "name": "Tripolemme",
+  "short_name": "TripolM",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#87CEEB",
@@ -9,12 +9,7 @@
   "icons": [
     {
       "src": "icons/icon.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "icons/icon.png",
-      "sizes": "512x512",
+      "sizes": "1024x1024",
       "type": "image/png"
     }
   ]
