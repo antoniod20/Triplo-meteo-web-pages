@@ -35,11 +35,31 @@
 <!-- MODALE -->
 <div id="modal">
   <div id="modalContent">
-    <h3>Inserisci la città</h3>
-    <input type="text" id="cityInput" placeholder="Inserisci città">
-    <button id="saveCity">Salva</button>
+    <h3>Impostazioni Meteo</h3>
+    
+    <label class="input-label">I tuoi preferiti:</label>
+    <div id="favoritesContainer"></div>
+
+    <hr class="separator">
+
+    <label class="input-label">Cerca nuova città:</label>
+    <div class="input-group">
+      <input type="text" id="cityInput" placeholder="es. Roma, Bari...">
+      <button id="saveCity">Salva</button>
+    </div>
   </div>
 </div>
+
+<div id="birthdayModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:10000; justify-content:center; align-items:center; flex-direction:column; text-align:center;">
+  <div style="background:white; padding:40px; border-radius:20px; box-shadow: 0 0 20px rgba(255,255,255,0.5);">
+    <h1 style="font-size: 3rem; margin:0; color: #d63384;">🎂</h1>
+    <h2 style="font-size: 2rem; color: #333;">Tanti Auguri Melins!</h2>
+    <p style="font-size: 1.2rem; color: #666;">Finalmente sei 30enne! Qualcuno ritorna ad essere più giovane... 😂 Love youuu! ❤️</p>
+    <button id="closeBirthday" style="margin-top:20px; padding:10px 20px; cursor:pointer; border-radius:10px; border:none; background:rgb(243, 240, 78); font-weight:bold;">Grazie!</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
 <script src="script.js"></script>
 </body>

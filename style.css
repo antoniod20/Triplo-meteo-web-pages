@@ -81,3 +81,106 @@ iframe { flex:1; border:none; }
   .container { height: 100%; }
   iframe { display:none; height: 100%; }
 }
+
+.fav-btn {
+  background: #f0f0f0;
+  border: 1px solid #ccc;
+  padding: 5px 10px;
+  border-radius: 15px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: background 0.3s;
+}
+
+.fav-btn:hover {
+  background: #e0e0e0;
+}
+
+/* Sfondo della modale (overlay) */
+#modal {
+  display: none;
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 2000;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Box della modale */
+#modalContent {
+  background: #ffffff;
+  padding: 25px;
+  border-radius: 20px;
+  width: 90%;
+  max-width: 350px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+  text-align: center;
+  /* Bordo sottile con il tuo giallo */
+  border: 2px solid rgb(243, 240, 78); 
+}
+
+#modalContent h3 {
+  margin-top: 0;
+  color: #333;
+  font-family: sans-serif;
+}
+
+/* Bottoni Preferiti */
+.fav-btn {
+  background: #f8f9fa;
+  border: 1px solid #eee;
+  padding: 8px 12px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.2s;
+  flex: 1;
+}
+
+.fav-btn:hover {
+  background: rgb(243, 240, 78); /* Il tuo giallo */
+  border-color: rgb(243, 240, 78);
+  color: #000;
+}
+
+/* Input città */
+#cityInput {
+  width: 100%;
+  padding: 12px;
+  box-sizing: border-box;
+  border: 2px solid #eee;
+  border-radius: 12px;
+  outline: none;
+  font-size: 1rem;
+  margin-bottom: 10px;
+  margin-top: 15px;
+}
+
+#cityInput:focus {
+  border-color: rgb(243, 240, 78); /* Il tuo giallo al focus */
+}
+
+/* Pulsante Salva */
+#saveCity {
+  width: 100%;
+  background: rgb(243, 240, 78); /* Il tuo giallo */
+  color: #000;
+  border: none;
+  padding: 12px;
+  border-radius: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: transform 0.1s;
+}
+
+#saveCity:hover {
+  filter: brightness(0.95); /* Effetto scurito leggero al passaggio */
+}
+
+#saveCity:active {
+  transform: scale(0.96);
+}

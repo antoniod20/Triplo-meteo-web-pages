@@ -4,34 +4,70 @@ const frames = [
   {el: document.getElementById('frame3'), url: 'https://www.ilmeteo.it/meteo/{city}'}
 ];
 
+// Gestione dati
+let savedCity = localStorage.getItem('city') || 'barletta';
+let favorites = JSON.parse(localStorage.getItem('favorites')) || ['bari', 'roma', 'napoli'];
+
 function updateFrames(city){
-  frames.forEach(f => f.el.src = f.url.replace('{city}', encodeURIComponent(city)));
+  frames.forEach(f => {
+    if(f.el) f.el.src = f.url.replace('{city}', encodeURIComponent(city));
+  });
 }
 
-const savedCity = localStorage.getItem('city') || 'barletta';
+function renderFavorites() {
+  const container = document.getElementById('favoritesContainer');
+  if (!container) return;
+  container.innerHTML = '';
+  
+  favorites.forEach(fav => {
+    const btn = document.createElement('button');
+    btn.textContent = fav.charAt(0).toUpperCase() + fav.slice(1);
+    btn.className = 'fav-btn'; // <--- AGGIUNGI QUESTA RIGA
+    btn.onclick = () => {
+      document.getElementById('cityInput').value = fav;
+      saveAction();
+    };
+    container.appendChild(btn);
+  });
+}
+
+function saveAction() {
+  const city = document.getElementById('cityInput').value.trim().toLowerCase();
+  if (!city) return;
+
+  // Aggiunge ai preferiti se non c'è
+  if (!favorites.includes(city)) {
+    favorites.push(city);
+    if (favorites.length > 3) favorites.shift();
+    localStorage.setItem('favorites', JSON.stringify(favorites));
+  }
+
+  localStorage.setItem('city', city);
+  updateFrames(city);
+  document.getElementById('modal').style.display = 'none';
+}
+
+// Avvio
 updateFrames(savedCity);
 document.getElementById('cityInput').value = savedCity;
 
-// MODALE
-const modal = document.getElementById('modal');
-const cityInput = document.getElementById('cityInput');
-
-document.getElementById('settings').addEventListener('click', () => modal.style.display='flex');
-document.getElementById('saveCity').addEventListener('click', () => {
-  const city = cityInput.value.trim().toLowerCase();
-  if (!city) return;
-  localStorage.setItem('city', city);
-  updateFrames(city);
-  modal.style.display='none';
-});
-modal.addEventListener('click', e => {
-  if (e.target === modal) modal.style.display = 'none';
-});
-cityInput.addEventListener('keydown', e => {
-  if (e.key === 'Enter') document.getElementById('saveCity').click();
+// Eventi
+document.getElementById('settings').addEventListener('click', () => {
+  renderFavorites();
+  document.getElementById('modal').style.display = 'flex';
 });
 
-// TAB BAR MOBILE
+document.getElementById('saveCity').addEventListener('click', saveAction);
+
+document.getElementById('modal').addEventListener('click', e => {
+  if (e.target.id === 'modal') document.getElementById('modal').style.display = 'none';
+});
+
+document.getElementById('cityInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') saveAction();
+});
+
+// --- LOGICA TAB BAR (Mantenuta uguale alla tua) ---
 const tabs = document.querySelectorAll('.tab-bar button');
 tabs.forEach(tab => {
   tab.addEventListener('click', () => {
@@ -46,19 +82,51 @@ function showIframeResponsive() {
   const isMobile = window.innerWidth <= 768;
   const activeTab = document.querySelector('.tab-bar button.active');
   const activeIndex = activeTab ? parseInt(activeTab.dataset.index) : 0;
-
-  if (isMobile) {
-    // Mostra solo l'iframe del tab attivo
-    frames.forEach((f, i) => f.el.style.display = (i === activeIndex) ? 'block' : 'none');
-  } else {
-    // Mostra tutti gli iframe su desktop
-    frames.forEach(f => f.el.style.display = 'block');
-  }
+  frames.forEach((f, i) => {
+    f.el.style.display = (isMobile ? (i === activeIndex) : true) ? 'block' : 'none';
+  });
 }
-
 window.addEventListener('resize', showIframeResponsive);
 showIframeResponsive();
 
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./service-worker.js');
+function checkBirthday() {
+  const today = new Date();
+  const isBirthday = today.getDate() === 13 && 
+                     (today.getMonth() + 1) === 1 && 
+                     today.getFullYear() === 2026;
+
+  if (isBirthday) {
+    const bdayModal = document.getElementById('birthdayModal');
+    bdayModal.style.display = 'flex';
+
+    const duration = 15 * 1000; // Aumentata a 15 secondi (o finché non clicchi)
+    const animationEnd = Date.now() + duration;
+    const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 10001 };
+
+    // Salviamo l'intervallo in una variabile per poterlo fermare
+    const interval = setInterval(function() {
+      const timeLeft = animationEnd - Date.now();
+      if (timeLeft <= 0) return clearInterval(interval);
+
+      const particleCount = 50 * (timeLeft / duration);
+      confetti({ ...defaults, particleCount, origin: { x: Math.random(), y: Math.random() - 0.2 } });
+    }, 250);
+
+    // Gestione chiusura e stop coriandoli
+    document.getElementById('closeBirthday').onclick = () => {
+      // 1. Ferma la generazione di nuovi coriandoli
+      clearInterval(interval);
+      
+      // 2. Rimuove i coriandoli ancora presenti a schermo
+      if (typeof confetti.reset === 'function') {
+        confetti.reset();
+      }
+
+      // 3. Nasconde la modale
+      bdayModal.style.display = 'none';
+    };
+  }
 }
+
+// Avvia il controllo all'apertura
+checkBirthday();
