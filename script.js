@@ -1,16 +1,16 @@
 const frames = [
-  {el: document.getElementById('frame1'), url: 'https://www.3bmeteo.com/meteo/{city}'},
-  {el: document.getElementById('frame2'), url: 'https://www.google.com/search?q=meteo+{city}&sca_esv=07cdbffa48f41bdb&igu=1'},
-  {el: document.getElementById('frame3'), url: 'https://www.ilmeteo.it/meteo/{city}'}
+  { el: document.getElementById('frame1'), url: 'https://www.3bmeteo.com/meteo/{city}' },
+  { el: document.getElementById('frame2'), url: 'https://www.google.com/search?q=meteo+{city}&sca_esv=07cdbffa48f41bdb&igu=1' },
+  { el: document.getElementById('frame3'), url: 'https://www.ilmeteo.it/meteo/{city}' }
 ];
 
 // Gestione dati
 let savedCity = localStorage.getItem('city') || 'barletta';
 let favorites = JSON.parse(localStorage.getItem('favorites')) || ['bari', 'roma', 'napoli'];
 
-function updateFrames(city){
+function updateFrames(city) {
   frames.forEach(f => {
-    if(f.el) f.el.src = f.url.replace('{city}', encodeURIComponent(city));
+    if (f.el) f.el.src = f.url.replace('{city}', encodeURIComponent(city));
   });
 }
 
@@ -18,7 +18,7 @@ function renderFavorites() {
   const container = document.getElementById('favoritesContainer');
   if (!container) return;
   container.innerHTML = '';
-  
+
   favorites.forEach(fav => {
     const btn = document.createElement('button');
     btn.textContent = fav.charAt(0).toUpperCase() + fav.slice(1);
@@ -91,9 +91,9 @@ showIframeResponsive();
 
 function checkBirthday() {
   const today = new Date();
-  const isBirthday = today.getDate() === 13 && 
-                     (today.getMonth() + 1) === 1 && 
-                     today.getFullYear() === 2026;
+  const isBirthday = today.getDate() === 12 &&
+    (today.getMonth() + 1) === 1 &&
+    today.getFullYear() === 2026;
 
   if (isBirthday) {
     const bdayModal = document.getElementById('birthdayModal');
@@ -104,7 +104,7 @@ function checkBirthday() {
     const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 10001 };
 
     // Salviamo l'intervallo in una variabile per poterlo fermare
-    const interval = setInterval(function() {
+    const interval = setInterval(function () {
       const timeLeft = animationEnd - Date.now();
       if (timeLeft <= 0) return clearInterval(interval);
 
@@ -116,7 +116,7 @@ function checkBirthday() {
     document.getElementById('closeBirthday').onclick = () => {
       // 1. Ferma la generazione di nuovi coriandoli
       clearInterval(interval);
-      
+
       // 2. Rimuove i coriandoli ancora presenti a schermo
       if (typeof confetti.reset === 'function') {
         confetti.reset();
