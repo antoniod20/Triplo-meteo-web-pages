@@ -22,8 +22,67 @@ html {
 }
 
 iframe {
-  flex: 1;
+  width: 100%;
+  height: 100%;
   border: none;
+}
+
+.frame-wrapper {
+  flex: 1;
+  position: relative;
+  height: 100%;
+}
+
+.vote-btn.voted {
+  background: #ffd700;
+  /* Keep yellow for voted state, or maybe keep dark but yellow icon? User said "graficamente in modo coerente". Settings is dark. */
+  /* Let's keep the dark background and make the star yellow/glow */
+  background: rgba(20, 20, 30, 0.85);
+  /* Match Settings */
+  border: 1px solid rgba(255, 215, 0, 0.5);
+  /* Gold border */
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
+  filter: grayscale(0%);
+}
+
+.vote-btn {
+  position: absolute;
+  bottom: 80px;
+  /* Above tab bar/settings */
+  right: 10px;
+  /* Aligned with #settings (right: 10px) on desktop */
+
+  /* Settings Button Style Match */
+  width: 50px;
+  height: 50px;
+  border-radius: 20px;
+  /* Squircle */
+  background: rgba(20, 20, 30, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 1.5rem;
+  cursor: pointer;
+  z-index: 500;
+  transition: all 0.3s ease;
+  user-select: none;
+  color: white;
+  /* Default star color */
+}
+
+.vote-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.4);
+  background: rgba(30, 30, 45, 0.95);
+}
+
+.vote-btn:active {
+  transform: scale(0.95);
 }
 
 /* MODALE */
@@ -165,13 +224,28 @@ iframe {
   }
 
   iframe {
+    /* display: none;  <-- REMOVED per user request */
+    height: 100%;
+  }
+
+  .frame-wrapper {
     display: none;
     height: 100%;
+  }
+
+  .frame-wrapper.active {
+    display: block;
   }
 
   /* FAB floating above tab bar */
   #settings {
     bottom: 90px;
+    right: 20px;
+  }
+
+  /* Move vote button to avoid overlap with Settings FAB */
+  .vote-btn {
+    bottom: 150px;
     right: 20px;
   }
 }
@@ -281,6 +355,48 @@ iframe {
   /* Effetto scurito leggero al passaggio */
 }
 
+#resetRanking {
+  width: 100%;
+  background: #ff5252;
+  color: white;
+  border: none;
+  padding: 10px;
+  border-radius: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+#resetRanking:hover {
+  background: #ff1744;
+}
+
 #saveCity:active {
   transform: scale(0.96);
+}
+
+/* Floating Hearts Animation */
+.heart {
+  position: fixed;
+  color: #e91e63;
+  font-size: 24px;
+  user-select: none;
+  z-index: 999999;
+  /* Top level */
+  /* Higher than modal (10000) and confetti */
+  pointer-events: none;
+  /* Let clicks pass through */
+  animation: floatUp 4s linear forwards;
+}
+
+@keyframes floatUp {
+  0% {
+    transform: translateY(100vh) scale(0.5);
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateY(-10vh) scale(1.5);
+    opacity: 0;
+  }
 }

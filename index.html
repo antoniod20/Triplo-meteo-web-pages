@@ -33,15 +33,30 @@
 
   <!-- IFRAME -->
   <div class="container">
-    <iframe id="frame1" src=""></iframe>
-    <iframe id="frame2" src=""></iframe>
-    <iframe id="frame3" src=""></iframe>
+    <div class="frame-wrapper">
+      <iframe id="frame1" src=""></iframe>
+      <div class="vote-btn" data-frame="frame1">⭐</div>
+    </div>
+    <div class="frame-wrapper">
+      <iframe id="frame2" src=""></iframe>
+      <div class="vote-btn" data-frame="frame2">⭐</div>
+    </div>
+    <div class="frame-wrapper">
+      <iframe id="frame3" src=""></iframe>
+      <div class="vote-btn" data-frame="frame3">⭐</div>
+    </div>
   </div>
 
   <!-- MODALE -->
   <div id="modal">
     <div id="modalContent">
       <h3>Impostazioni Meteo</h3>
+
+      <label class="input-label">Classifica meteo preferiti:</label>
+      <div id="rankingContainer"></div>
+      <button id="resetRanking">Reset Classifica 🗑️</button>
+
+      <hr class="separator">
 
       <label class="input-label">I tuoi preferiti:</label>
       <div id="favoritesContainer"></div>
@@ -53,6 +68,19 @@
         <input type="text" id="cityInput" placeholder="es. Roma, Bari...">
         <button id="saveCity">Salva</button>
       </div>
+    </div>
+  </div>
+
+
+  <div id="valentineModal"
+    style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:10000; justify-content:center; align-items:center; flex-direction:column; text-align:center;">
+    <div style="background:white; padding:40px; border-radius:20px; box-shadow: 0 0 20px rgba(255,255,255,0.5);">
+      <h1 style="font-size: 3rem; margin:0; color: #e91e63;">💖</h1>
+      <h2 style="font-size: 2rem; color: #333;">Buon San Valentino!</h2>
+      <p style="font-size: 1.2rem; color: #666;">Beh non potevo non aggiungere anche questo con l'aggiornamento 🤣 Ti
+        amo! 🥰</p>
+      <button id="closeValentine"
+        style="margin-top:20px; padding:10px 20px; cursor:pointer; border-radius:10px; border:none; background:#ff80ab; color:white; font-weight:bold;">Grazie!</button>
     </div>
   </div>
 
