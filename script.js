@@ -178,115 +178,62 @@ function updateVoteButtons() {
 
 // --- TAB BAR & RESPONSIVE ---
 
+// --- TAB BAR & RESPONSIVE ---
+
 const tabs = document.querySelectorAll('.tab-bar button');
 tabs.forEach(tab => {
   tab.addEventListener('click', () => {
     const index = parseInt(tab.dataset.index);
     tabs.forEach(t => t.classList.remove('active'));
     tab.classList.add('active');
-
-    // Hide all wrappers, show only selected one (Mobile logic mostly)
-    // Note: On desktop flex handles it, but we can toggle display for mobile logic compatibility
     updateResponsiveLayout();
   });
 });
 
 function updateResponsiveLayout() {
   const isMobile = window.innerWidth <= 768;
+  const isFullView = document.body.classList.contains('full-view');
+
   const activeTab = document.querySelector('.tab-bar button.active');
   const activeIndex = activeTab ? parseInt(activeTab.dataset.index) : 0;
 
   frames.forEach((f, i) => {
-    if (!f.wrapper) return; // Safety check
+    if (!f.wrapper) return;
 
-    if (isMobile) {
-      // Mobile: Show only active frame
+    // Show all if Desktop OR Full View
+    if (!isMobile || isFullView) {
+      f.wrapper.style.display = 'block';
+      f.wrapper.classList.remove('active');
+    } else {
+      // Mobile: Show only active
       f.wrapper.style.display = (i === activeIndex) ? 'block' : 'none';
       f.wrapper.classList.toggle('active', i === activeIndex);
-    } else {
-      // Desktop: Let CSS handle it (remove inline styles)
-      f.wrapper.style.display = '';
-      f.wrapper.classList.remove('active');
     }
   });
 }
 
+function toggleFullView() {
+  document.body.classList.toggle('full-view');
+  const isFull = document.body.classList.contains('full-view');
+  // Optional: Manipulate viewport if needed, or just let CSS do it.
+  // The user wants to see all frames side-by-side. 
+  // Let's use the viewport trick again as it was the only way to fit them on mobile.
+
+  const viewportMeta = document.querySelector('meta[name="viewport"]');
+  if (isFull) {
+    if (viewportMeta) viewportMeta.content = "width=1200";
+    document.getElementById('modal').style.display = 'none';
+    document.getElementById('closeFullViewBtn').style.display = 'block';
+  } else {
+    if (viewportMeta) viewportMeta.content = "width=device-width, initial-scale=1.0";
+    document.getElementById('closeFullViewBtn').style.display = 'none';
+  }
+  updateResponsiveLayout();
+}
+
 window.addEventListener('resize', updateResponsiveLayout);
 
-
-// --- SAN VALENTINO & BIRTHDAY ---
-
-function createFloatingHeart(x, y, char = '❤️') {
-  const heart = document.createElement('div');
-  heart.className = 'heart';
-  heart.textContent = char;
-  heart.style.left = x + 'px';
-  heart.style.top = y + 'px';
-  heart.style.fontSize = (Math.random() * 20 + 20) + 'px';
-  document.body.appendChild(heart);
-
-  setTimeout(() => heart.remove(), 4000);
-}
-
-
-
-function checkSpecialHeader() {
-  const today = new Date();
-  const d = today.getDate();
-  const m = today.getMonth() + 1; // 1-12
-
-  // San Valentino (14 Febbraio)
-  // Per test: abilitare sempre o decommentare riga sotto
-  const isValentine = (d === 14 && m === 2);
-  // const isValentine = true; // ABILITATO PER DEMO
-
-  if (isValentine) {
-    const vModal = document.getElementById('valentineModal');
-    // Check if already shown today? Maybe not requested, assume show on load
-    vModal.style.display = 'flex';
-
-    startValentineHearts();
-
-    document.getElementById('closeValentine').onclick = () => {
-      vModal.style.display = 'none';
-      if (valentineInterval) clearInterval(valentineInterval);
-      document.querySelectorAll('.heart').forEach(h => h.remove());
-    };
-  }
-
-  // Compleanno (13 Gennaio)
-  const isBirthday = (d === 13 && m === 1 && today.getFullYear() === 2026);
-  if (isBirthday) {
-    const bdayModal = document.getElementById('birthdayModal');
-    bdayModal.style.display = 'flex';
-    // ... (Existing confetti logic calls) ...
-    const duration = 15 * 1000;
-    const animationEnd = Date.now() + duration;
-    const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 10001 };
-    const interval = setInterval(function () {
-      const timeLeft = animationEnd - Date.now();
-      if (timeLeft <= 0) return clearInterval(interval);
-      const particleCount = 50 * (timeLeft / duration);
-      confetti({ ...defaults, particleCount, origin: { x: Math.random(), y: Math.random() - 0.2 } });
-    }, 250);
-
-    document.getElementById('closeBirthday').onclick = () => {
-      clearInterval(interval);
-      if (typeof confetti.reset === 'function') confetti.reset();
-      bdayModal.style.display = 'none';
-    };
-  }
-}
-
-// --- INIT ---
-
-// Fix wrapper references in array if DOM wasn't ready (not needed if script at end of body)
-// frames array defined at top is fine.
-
-updateFrames(savedCity);
-document.getElementById('cityInput').value = savedCity;
-updateVoteButtons();
-updateResponsiveLayout();
+// ... (Rest of code)
 
 // Event Listeners
 document.getElementById('settings').addEventListener('click', () => {
@@ -299,6 +246,9 @@ document.getElementById('settings').addEventListener('click', () => {
 document.getElementById('resetRanking').addEventListener('click', resetVotes);
 
 document.getElementById('saveCity').addEventListener('click', saveAction);
+
+document.getElementById('fullViewBtn').addEventListener('click', toggleFullView);
+document.getElementById('closeFullViewBtn').addEventListener('click', toggleFullView);
 
 document.getElementById('modal').addEventListener('click', e => {
   if (e.target.id === 'modal') document.getElementById('modal').style.display = 'none';

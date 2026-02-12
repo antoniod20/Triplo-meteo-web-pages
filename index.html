@@ -16,6 +16,12 @@
   <!-- <div class="header"></div> -->
 
   <!-- TAB BAR MOBILE -->
+
+  <!-- Close Full View Button (Hidden by default) -->
+  <button id="closeFullViewBtn"
+    style="display:none; position:fixed; top:20px; left:50%; transform:translateX(-50%); z-index:20000; padding:10px 20px; background:#ff5252; color:white; border:none; border-radius:20px; font-weight:bold; cursor:pointer; box-shadow:0 5px 15px rgba(0,0,0,0.3);">Chiudi
+    Vista Completa ❌</button>
+
   <!-- TAB BAR MOBILE -->
   <div class="tab-bar">
     <button data-index="0" class="active">3BMeteo</button>
@@ -51,6 +57,10 @@
   <div id="modal">
     <div id="modalContent">
       <h3>Impostazioni Meteo</h3>
+
+      <button id="fullViewBtn"
+        style="width:100%; background:#3a8fff; color:white; border:none; padding:10px; border-radius:12px; font-weight:bold; cursor:pointer; margin-top:10px; margin-bottom:5px;">Vista
+        Completa 📸</button>
 
       <label class="input-label">Classifica meteo preferiti:</label>
       <div id="rankingContainer"></div>

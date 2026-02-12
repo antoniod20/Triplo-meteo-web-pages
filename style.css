@@ -399,4 +399,34 @@ iframe {
     transform: translateY(-10vh) scale(1.5);
     opacity: 0;
   }
+
+
+}
+
+/* FULL VIEW (SCREENSHOT MODE) */
+body.full-view .container {
+  display: flex !important;
+  flex-direction: row !important;
+  width: 1200px !important;
+  /* Force wide width to zoom out viewport */
+  max-width: none !important;
+  height: 100% !important;
+}
+
+body.full-view .frame-wrapper {
+  display: block !important;
+  flex: 1;
+  max-width: 400px;
+  /* Keep mobile simulation width for readability */
+  margin: 0 5px;
+}
+
+body.full-view .tab-bar,
+body.full-view #settings,
+body.full-view .vote-btn {
+  display: none !important;
+}
+
+body.full-view #closeFullViewBtn {
+  display: block !important;
 }
