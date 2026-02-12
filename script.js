@@ -231,6 +231,25 @@ function toggleFullView() {
   updateResponsiveLayout();
 }
 
+// --- INIT ---
+
+document.addEventListener('DOMContentLoaded', () => {
+  // Ensure wrappers are found if not already
+  frames.forEach(f => {
+    if (f.iframe && !f.wrapper) {
+      f.wrapper = f.iframe.closest('.frame-wrapper') || f.iframe.parentElement;
+    }
+  });
+
+  updateFrames(savedCity);
+  document.getElementById('cityInput').value = savedCity;
+  updateVoteButtons();
+  updateResponsiveLayout();
+});
+
+// Double check layout after full load (fixes potential mobile viewport issues)
+window.addEventListener('load', updateResponsiveLayout);
+
 window.addEventListener('resize', updateResponsiveLayout);
 
 // ... (Rest of code)

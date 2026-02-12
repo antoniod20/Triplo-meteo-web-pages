@@ -223,19 +223,8 @@ iframe {
     height: 100%;
   }
 
-  iframe {
-    /* display: none;  <-- REMOVED per user request */
-    height: 100%;
-  }
-
-  .frame-wrapper {
-    display: none;
-    height: 100%;
-  }
-
-  .frame-wrapper.active {
-    display: block;
-  }
+  /* Frames visibility is handled by JS (updateResponsiveLayout) 
+     to avoid CSS/JS conflicts. */
 
   /* FAB floating above tab bar */
   #settings {
