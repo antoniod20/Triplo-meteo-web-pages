@@ -33,6 +33,10 @@ let votes = JSON.parse(localStorage.getItem('votes')) || {
   frame3: { count: 0, lastDate: null }
 };
 
+let votingEnabled = localStorage.getItem('votingEnabled') !== 'false'; // Default true
+
+
+
 // --- FUNZIONI CORE ---
 
 function updateFrames(city) {
@@ -176,6 +180,23 @@ function updateVoteButtons() {
   });
 }
 
+
+function updateVotingModeInternal() {
+  const toggle = document.getElementById('voteToggle');
+  const rankingSection = document.getElementById('rankingSection');
+  const voteBtns = document.querySelectorAll('.vote-btn');
+
+  if (toggle) toggle.checked = votingEnabled;
+
+  if (votingEnabled) {
+    if (rankingSection) rankingSection.style.display = 'block';
+    voteBtns.forEach(btn => btn.style.display = 'flex');
+  } else {
+    if (rankingSection) rankingSection.style.display = 'none';
+    voteBtns.forEach(btn => btn.style.display = 'none');
+  }
+}
+
 // --- TAB BAR & RESPONSIVE ---
 
 // --- TAB BAR & RESPONSIVE ---
@@ -244,6 +265,7 @@ document.addEventListener('DOMContentLoaded', () => {
   updateFrames(savedCity);
   document.getElementById('cityInput').value = savedCity;
   updateVoteButtons();
+  updateVotingModeInternal();
   updateResponsiveLayout();
 });
 
@@ -260,6 +282,15 @@ document.getElementById('settings').addEventListener('click', () => {
   renderRanking();
   document.getElementById('modal').style.display = 'flex';
   document.getElementById('modal').style.display = 'flex';
+  // Re-sync switch state when opening modal
+  const toggle = document.getElementById('voteToggle');
+  if (toggle) toggle.checked = votingEnabled;
+});
+
+document.getElementById('voteToggle').addEventListener('change', (e) => {
+  votingEnabled = e.target.checked;
+  localStorage.setItem('votingEnabled', votingEnabled);
+  updateVotingModeInternal();
 });
 
 document.getElementById('resetRanking').addEventListener('click', resetVotes);
@@ -286,4 +317,4 @@ document.querySelectorAll('.vote-btn').forEach(btn => {
   });
 });
 
-checkSpecialHeader();
+

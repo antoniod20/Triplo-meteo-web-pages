@@ -62,9 +62,20 @@
         style="width:100%; background:#3a8fff; color:white; border:none; padding:10px; border-radius:12px; font-weight:bold; cursor:pointer; margin-top:10px; margin-bottom:5px;">Vista
         Completa 📸</button>
 
-      <label class="input-label">Classifica meteo preferiti:</label>
-      <div id="rankingContainer"></div>
-      <button id="resetRanking">Reset Classifica 🗑️</button>
+      <div class="toggle-container"
+        style="display:flex; align-items:center; justify-content:space-between; margin: 15px 0;">
+        <label for="voteToggle" style="font-weight:bold; color:#333;">Modalità Voto ⭐</label>
+        <label class="switch">
+          <input type="checkbox" id="voteToggle" checked>
+          <span class="slider round"></span>
+        </label>
+      </div>
+
+      <div id="rankingSection">
+        <label class="input-label">Classifica meteo preferiti:</label>
+        <div id="rankingContainer"></div>
+        <button id="resetRanking">Reset Classifica 🗑️</button>
+      </div>
 
       <hr class="separator">
 
