@@ -1,19 +1,18 @@
+const availableProviders = {
+  '3bmeteo': { name: '3BMeteo', url: 'https://www.3bmeteo.com/meteo/{city}' },
+  'google': { name: 'Google', url: 'https://www.google.com/search?q=meteo+{city}&sca_esv=07cdbffa48f41bdb&igu=1' },
+  'ilmeteo': { name: 'IlMeteo', url: 'https://www.ilmeteo.it/meteo/{city}' },
+  'meteoeradar': { name: 'Meteo & Radar', url: 'https://www.meteoeradar.it/pagina-meteo/{city}' },
+  'meteogiuliacci': { name: 'Giuliacci', url: 'https://www.meteogiuliacci.it/meteo/{city}' },
+  'meteoam': { name: 'MeteoAM', url: 'https://www.meteoam.it/it/meteo-citta/{city}' }
+};
+
+let userProviders = JSON.parse(localStorage.getItem('userProviders')) || ['3bmeteo', 'google', 'ilmeteo'];
+
 const frames = [
-  {
-    id: 'frame1',
-    iframe: document.getElementById('frame1'),
-    url: 'https://www.3bmeteo.com/meteo/{city}'
-  },
-  {
-    id: 'frame2',
-    iframe: document.getElementById('frame2'),
-    url: 'https://www.google.com/search?q=meteo+{city}&sca_esv=07cdbffa48f41bdb&igu=1'
-  },
-  {
-    id: 'frame3',
-    iframe: document.getElementById('frame3'),
-    url: 'https://www.ilmeteo.it/meteo/{city}'
-  }
+  { id: 'frame1', iframe: document.getElementById('frame1'), url: availableProviders[userProviders[0]]?.url || availableProviders['3bmeteo'].url },
+  { id: 'frame2', iframe: document.getElementById('frame2'), url: availableProviders[userProviders[1]]?.url || availableProviders['google'].url },
+  { id: 'frame3', iframe: document.getElementById('frame3'), url: availableProviders[userProviders[2]]?.url || availableProviders['ilmeteo'].url }
 ];
 
 // Add wrapper reference dynamically
@@ -75,8 +74,12 @@ function renderRanking() {
   ranking.forEach((item, index) => {
     const div = document.createElement('div');
     div.className = 'ranking-item';
-    // Mapping IDs to friendly names
-    const names = { frame1: '3BMeteo', frame2: 'Google', frame3: 'IlMeteo' };
+    // Mapping IDs to friendly names based on user selection
+    const names = {
+      frame1: availableProviders[userProviders[0]]?.name || 'Meteo 1',
+      frame2: availableProviders[userProviders[1]]?.name || 'Meteo 2',
+      frame3: availableProviders[userProviders[2]]?.name || 'Meteo 3'
+    };
     const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '';
 
     div.innerHTML = `
@@ -201,15 +204,29 @@ function updateVotingModeInternal() {
 
 // --- TAB BAR & RESPONSIVE ---
 
-const tabs = document.querySelectorAll('.tab-bar button');
-tabs.forEach(tab => {
-  tab.addEventListener('click', () => {
-    const index = parseInt(tab.dataset.index);
-    tabs.forEach(t => t.classList.remove('active'));
-    tab.classList.add('active');
-    updateResponsiveLayout();
+function renderTabButtons() {
+  const tabBar = document.querySelector('.tab-bar');
+  if (!tabBar) return;
+  tabBar.innerHTML = '';
+
+  userProviders.forEach((provKey, index) => {
+    const btn = document.createElement('button');
+    btn.dataset.index = index;
+    if (index === 0) btn.classList.add('active');
+    btn.textContent = availableProviders[provKey]?.name || 'Meteo';
+
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-bar button').forEach(t => t.classList.remove('active'));
+      btn.classList.add('active');
+      updateResponsiveLayout();
+    });
+
+    tabBar.appendChild(btn);
   });
-});
+}
+
+// Initial render
+renderTabButtons();
 
 function updateResponsiveLayout() {
   const isMobile = window.innerWidth <= 768;
@@ -277,6 +294,61 @@ window.addEventListener('resize', updateResponsiveLayout);
 // ... (Rest of code)
 
 // Event Listeners
+
+// --- MANAGE PROVIDERS LOGIC ---
+
+function populateProvidersModal() {
+  const selects = [document.getElementById('slot1'), document.getElementById('slot2'), document.getElementById('slot3')];
+
+  selects.forEach((select, i) => {
+    select.innerHTML = '';
+    Object.keys(availableProviders).forEach(key => {
+      const option = document.createElement('option');
+      option.value = key;
+      option.textContent = availableProviders[key].name;
+      if (userProviders[i] === key) option.selected = true;
+      select.appendChild(option);
+    });
+  });
+}
+
+document.getElementById('manageProvidersBtn').addEventListener('click', () => {
+  populateProvidersModal();
+  document.getElementById('modal').style.display = 'none'; // Close settings modal
+  document.getElementById('providersModal').style.display = 'flex';
+});
+
+document.getElementById('closeProvidersModalBtn').addEventListener('click', () => {
+  document.getElementById('providersModal').style.display = 'none';
+});
+
+document.getElementById('saveProvidersSetupBtn').addEventListener('click', () => {
+  const newProviders = [
+    document.getElementById('slot1').value,
+    document.getElementById('slot2').value,
+    document.getElementById('slot3').value
+  ];
+
+  // Prevent duplicates (optional but good for UX)
+  if (new Set(newProviders).size !== newProviders.length) {
+    alert("Attenzione: Hai selezionato lo stesso meteo più volte. Scegli fonti diverse per ogni slot!");
+    return;
+  }
+
+  localStorage.setItem('userProviders', JSON.stringify(newProviders));
+
+  // Reset votes because sources changed
+  const resetVotesObj = {
+    frame1: { count: 0, lastDate: null },
+    frame2: { count: 0, lastDate: null },
+    frame3: { count: 0, lastDate: null }
+  };
+  localStorage.setItem('votes', JSON.stringify(resetVotesObj));
+
+  // Reload page to apply changes cleanly
+  window.location.reload();
+});
+
 document.getElementById('settings').addEventListener('click', () => {
   renderFavorites();
   renderRanking();
