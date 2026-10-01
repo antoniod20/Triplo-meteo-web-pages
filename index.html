@@ -3,6 +3,8 @@
 
 <head>
   <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; manifest-src 'self'; connect-src 'self'; frame-src https://www.3bmeteo.com https://www.google.com https://www.ilmeteo.it https://www.meteoeradar.it https://www.meteogiuliacci.it https://www.meteoam.it; object-src 'none'; base-uri 'self'; form-action 'none'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tripolemme</title>
   <link rel="stylesheet" href="style.css">
@@ -97,18 +99,6 @@
   </div>
 
 
-  <div id="valentineModal"
-    style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:10000; justify-content:center; align-items:center; flex-direction:column; text-align:center;">
-    <div style="background:white; padding:40px; border-radius:20px; box-shadow: 0 0 20px rgba(255,255,255,0.5);">
-      <h1 style="font-size: 3rem; margin:0; color: #e91e63;">💖</h1>
-      <h2 style="font-size: 2rem; color: #333;">Buon San Valentino!</h2>
-      <p style="font-size: 1.2rem; color: #666;">Beh non potevo non aggiungere anche questo con l'aggiornamento 🤣 Ti
-        amo! 🥰</p>
-      <button id="closeValentine"
-        style="margin-top:20px; padding:10px 20px; cursor:pointer; border-radius:10px; border:none; background:#ff80ab; color:white; font-weight:bold;">Grazie!</button>
-    </div>
-  </div>
-
   <!-- MODALE PERSONALIZZA FONTI -->
   <div id="providersModal"
     style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); backdrop-filter:blur(4px); z-index:3000; justify-content:center; align-items:center;">
@@ -139,20 +129,6 @@
         style="width:100%; background:#ccc; color:black; border:none; padding:10px; border-radius:12px; font-weight:bold; cursor:pointer; margin-top:10px;">Annulla</button>
     </div>
   </div>
-
-  <div id="birthdayModal"
-    style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:10000; justify-content:center; align-items:center; flex-direction:column; text-align:center;">
-    <div style="background:white; padding:40px; border-radius:20px; box-shadow: 0 0 20px rgba(255,255,255,0.5);">
-      <h1 style="font-size: 3rem; margin:0; color: #d63384;">🎂</h1>
-      <h2 style="font-size: 2rem; color: #333;">Tanti Auguri Melins!</h2>
-      <p style="font-size: 1.2rem; color: #666;">Finalmente sei 30enne! Qualcuno ritorna ad essere più giovane... 😂
-        Love youuu! ❤️</p>
-      <button id="closeBirthday"
-        style="margin-top:20px; padding:10px 20px; cursor:pointer; border-radius:10px; border:none; background:rgb(243, 240, 78); font-weight:bold;">Grazie!</button>
-    </div>
-  </div>
-
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
   <script src="script.js"></script>
 </body>

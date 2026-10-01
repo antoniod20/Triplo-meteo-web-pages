@@ -7,7 +7,18 @@ const availableProviders = {
   'meteoam': { name: 'MeteoAM', url: 'https://www.meteoam.it/it/meteo-citta/{city}' }
 };
 
-let userProviders = JSON.parse(localStorage.getItem('userProviders')) || ['3bmeteo', 'google', 'ilmeteo'];
+// Legge un valore JSON dal localStorage senza bloccare la pagina se è corrotto
+function loadJSON(key, fallback) {
+  try {
+    const value = JSON.parse(localStorage.getItem(key));
+    return value ?? fallback;
+  } catch (e) {
+    return fallback;
+  }
+}
+
+let userProviders = loadJSON('userProviders', ['3bmeteo', 'google', 'ilmeteo']);
+if (!Array.isArray(userProviders)) userProviders = ['3bmeteo', 'google', 'ilmeteo'];
 
 const frames = [
   { id: 'frame1', iframe: document.getElementById('frame1'), url: availableProviders[userProviders[0]]?.url || availableProviders['3bmeteo'].url },
@@ -24,13 +35,22 @@ frames.forEach(f => {
 
 // --- GESTIONE DATI ---
 let savedCity = localStorage.getItem('city') || 'barletta';
-let favorites = JSON.parse(localStorage.getItem('favorites')) || ['bari', 'roma', 'napoli'];
+let favorites = loadJSON('favorites', ['bari', 'roma', 'napoli']);
+if (!Array.isArray(favorites)) favorites = ['bari', 'roma', 'napoli'];
+favorites = favorites.filter(f => typeof f === 'string');
 // Votes structure: { frame1: { count: 0, lastDate: '2023-10-27' }, ... }
-let votes = JSON.parse(localStorage.getItem('votes')) || {
+let votes = loadJSON('votes', {
   frame1: { count: 0, lastDate: null },
   frame2: { count: 0, lastDate: null },
   frame3: { count: 0, lastDate: null }
-};
+});
+if (typeof votes !== 'object' || Array.isArray(votes)) {
+  votes = {
+    frame1: { count: 0, lastDate: null },
+    frame2: { count: 0, lastDate: null },
+    frame3: { count: 0, lastDate: null }
+  };
+}
 
 let votingEnabled = localStorage.getItem('votingEnabled') !== 'false'; // Default true
 
@@ -82,10 +102,15 @@ function renderRanking() {
     };
     const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '';
 
-    div.innerHTML = `
-      <span>${medal} <strong>${names[item.id]}</strong></span>
-      <span>${item.count} ⭐</span>
-    `;
+    const nameSpan = document.createElement('span');
+    const strong = document.createElement('strong');
+    strong.textContent = names[item.id] || item.id;
+    nameSpan.append(medal ? medal + ' ' : '', strong);
+
+    const countSpan = document.createElement('span');
+    countSpan.textContent = `${Number(item.count) || 0} ⭐`;
+
+    div.append(nameSpan, countSpan);
     container.appendChild(div);
   });
 }
@@ -141,16 +166,15 @@ function handleVote(frameId, btnElement) {
   }
 }
 
-let valentineInterval;
-
-function startValentineHearts() {
-  if (valentineInterval) clearInterval(valentineInterval);
-
-  valentineInterval = setInterval(() => {
-    if (document.getElementById('valentineModal').style.display === 'flex') {
-      createFloatingHeart(Math.random() * window.innerWidth, window.innerHeight);
-    }
-  }, 300);
+// Piccola animazione della stellina che sale dal pulsante di voto
+function createFloatingHeart(x, y, symbol = '⭐') {
+  const el = document.createElement('span');
+  el.className = 'heart star';
+  el.textContent = symbol;
+  el.style.left = `${x}px`;
+  el.style.top = `${y}px`;
+  document.body.appendChild(el);
+  el.addEventListener('animationend', () => el.remove());
 }
 
 function resetVotes() {
