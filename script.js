@@ -1,11 +1,17 @@
+// Ogni fonte vuole il nome della città in un formato diverso:
+// - sep: carattere che unisce le parole ("la spezia" -> "la+spezia" o "la-spezia")
+// - apos: true se l'apostrofo separa le parole ("l'aquila" -> "l-aquila"), false se va tolto ("laquila")
+// - query: la città va in una ricerca testuale, quindi basta codificarla
 const availableProviders = {
-  '3bmeteo': { name: '3BMeteo', url: 'https://www.3bmeteo.com/meteo/{city}' },
-  'google': { name: 'Google', url: 'https://www.google.com/search?q=meteo+{city}&sca_esv=07cdbffa48f41bdb&igu=1' },
-  'ilmeteo': { name: 'IlMeteo', url: 'https://www.ilmeteo.it/meteo/{city}' },
-  'meteoeradar': { name: 'Meteo & Radar', url: 'https://www.meteoeradar.it/pagina-meteo/{city}' },
-  'meteogiuliacci': { name: 'Giuliacci', url: 'https://www.meteogiuliacci.it/meteo/{city}' },
-  'meteoam': { name: 'MeteoAM', url: 'https://www.meteoam.it/it/meteo-citta/{city}' }
+  '3bmeteo': { name: '3BMeteo', url: 'https://www.3bmeteo.com/meteo/{city}', slug: { sep: '+', apos: false } },
+  'google': { name: 'Google', url: 'https://www.google.com/search?q=meteo+{city}&sca_esv=07cdbffa48f41bdb&igu=1', slug: { query: true } },
+  'ilmeteo': { name: 'IlMeteo', url: 'https://www.ilmeteo.it/meteo/{city}', slug: { sep: '+', apos: false } },
+  'meteoeradar': { name: 'Meteo & Radar', url: 'https://www.meteoeradar.it/pagina-meteo/{city}', slug: { sep: '-', apos: true } },
+  'meteogiuliacci': { name: 'Giuliacci', url: 'https://www.meteogiuliacci.it/meteo/{city}', slug: { sep: '-', apos: false } },
+  'meteoam': { name: 'MeteoAM', url: 'https://www.meteoam.it/it/meteo-citta/{city}', slug: { sep: '-', apos: true } }
 };
+
+const defaultProviders = ['3bmeteo', 'google', 'ilmeteo'];
 
 // Legge un valore JSON dal localStorage senza bloccare la pagina se è corrotto
 function loadJSON(key, fallback) {
@@ -17,24 +23,29 @@ function loadJSON(key, fallback) {
   }
 }
 
-let userProviders = loadJSON('userProviders', ['3bmeteo', 'google', 'ilmeteo']);
-if (!Array.isArray(userProviders)) userProviders = ['3bmeteo', 'google', 'ilmeteo'];
+let userProviders = loadJSON('userProviders', defaultProviders);
+if (!Array.isArray(userProviders)) userProviders = defaultProviders;
+userProviders = defaultProviders.map((def, i) => availableProviders[userProviders[i]] ? userProviders[i] : def);
 
-const frames = [
-  { id: 'frame1', iframe: document.getElementById('frame1'), url: availableProviders[userProviders[0]]?.url || availableProviders['3bmeteo'].url },
-  { id: 'frame2', iframe: document.getElementById('frame2'), url: availableProviders[userProviders[1]]?.url || availableProviders['google'].url },
-  { id: 'frame3', iframe: document.getElementById('frame3'), url: availableProviders[userProviders[2]]?.url || availableProviders['ilmeteo'].url }
-];
+const frames = userProviders.map((key, i) => ({
+  id: `frame${i + 1}`,
+  iframe: document.getElementById(`frame${i + 1}`),
+  provider: availableProviders[key]
+}));
 
 // Add wrapper reference dynamically
 frames.forEach(f => {
   if (f.iframe) {
     f.wrapper = f.iframe.closest('.frame-wrapper') || f.iframe.parentElement;
+    f.openLink = f.wrapper.querySelector('.open-btn');
+    f.iframe.title = f.provider.name;
   }
 });
 
 // --- GESTIONE DATI ---
-let savedCity = localStorage.getItem('city') || 'barletta';
+// Un link condiviso (?citta=...) ha la precedenza sulla città salvata, senza sovrascriverla
+const sharedCity = new URLSearchParams(location.search).get('citta');
+let currentCity = (sharedCity && sharedCity.trim().toLowerCase()) || localStorage.getItem('city') || 'barletta';
 let favorites = loadJSON('favorites', ['bari', 'roma', 'napoli']);
 if (!Array.isArray(favorites)) favorites = ['bari', 'roma', 'napoli'];
 favorites = favorites.filter(f => typeof f === 'string');
@@ -58,10 +69,44 @@ let votingEnabled = localStorage.getItem('votingEnabled') !== 'false'; // Defaul
 
 // --- FUNZIONI CORE ---
 
+// Trasforma il nome della città nel formato che la fonte si aspetta nell'URL
+function formatCity(city, slug) {
+  if (slug.query) return encodeURIComponent(city);
+
+  return city
+    .normalize('NFD').replace(/[̀-ͯ]/g, '') // via gli accenti: forlì -> forli
+    .toLowerCase()
+    .replace(/['’`]/g, slug.apos ? ' ' : '')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+    .split(' ')
+    .join(slug.sep);
+}
+
+function prettyCity(city) {
+  return city.replace(/(^|[\s'’-])(\p{L})/gu, (m, sep, ch) => sep + ch.toUpperCase());
+}
+
 function updateFrames(city) {
+  currentCity = city;
   frames.forEach(f => {
-    if (f.iframe) f.iframe.src = f.url.replace('{city}', encodeURIComponent(city));
+    if (!f.iframe) return;
+    const url = f.provider.url.replace('{city}', formatCity(city, f.provider.slug));
+    f.iframe.src = url;
+    if (f.openLink) {
+      f.openLink.href = url;
+      f.openLink.setAttribute('aria-label', `Apri ${f.provider.name} in una nuova scheda`);
+    }
   });
+
+  // L'indirizzo nella barra del browser è sempre un link condivisibile
+  const pageUrl = new URL(location.href);
+  pageUrl.searchParams.set('citta', city);
+  history.replaceState(null, '', pageUrl);
+}
+
+function saveFavorites() {
+  localStorage.setItem('favorites', JSON.stringify(favorites));
 }
 
 function renderFavorites() {
@@ -70,15 +115,41 @@ function renderFavorites() {
   container.innerHTML = '';
 
   favorites.forEach(fav => {
+    const chip = document.createElement('span');
+    chip.className = 'fav-chip';
+
     const btn = document.createElement('button');
-    btn.textContent = fav.charAt(0).toUpperCase() + fav.slice(1);
+    btn.type = 'button';
+    btn.textContent = prettyCity(fav);
     btn.className = 'fav-btn';
     btn.onclick = () => {
       document.getElementById('cityInput').value = fav;
       saveAction();
     };
-    container.appendChild(btn);
+
+    const del = document.createElement('button');
+    del.type = 'button';
+    del.className = 'fav-del';
+    del.textContent = '✕';
+    del.setAttribute('aria-label', `Rimuovi ${prettyCity(fav)} dai preferiti`);
+    del.onclick = () => {
+      favorites = favorites.filter(f => f !== fav);
+      saveFavorites();
+      renderFavorites();
+      const next = container.querySelector('.fav-btn') || document.getElementById('cityInput');
+      next.focus();
+    };
+
+    chip.append(btn, del);
+    container.appendChild(chip);
   });
+
+  if (favorites.length === 0) {
+    const empty = document.createElement('span');
+    empty.className = 'fav-empty';
+    empty.textContent = 'Nessun preferito: cerca una città qui sotto.';
+    container.appendChild(empty);
+  }
 }
 
 function renderRanking() {
@@ -122,12 +193,35 @@ function saveAction() {
   if (!favorites.includes(city)) {
     favorites.push(city);
     if (favorites.length > 3) favorites.shift();
-    localStorage.setItem('favorites', JSON.stringify(favorites));
+    saveFavorites();
   }
 
   localStorage.setItem('city', city);
   updateFrames(city);
-  document.getElementById('modal').style.display = 'none';
+  closeModal(document.getElementById('modal'));
+}
+
+// Suggerimenti città: elenco ufficiale ISTAT dei comuni, caricato solo alla prima apertura
+let comuniLoaded = false;
+
+function loadComuni() {
+  if (comuniLoaded) return;
+  comuniLoaded = true;
+
+  fetch('comuni.json')
+    .then(res => res.ok ? res.json() : [])
+    .then(list => {
+      const datalist = document.getElementById('comuniList');
+      const fragment = document.createDocumentFragment();
+      list.forEach(([name, sigla]) => {
+        const option = document.createElement('option');
+        option.value = name;
+        option.label = sigla;
+        fragment.appendChild(option);
+      });
+      datalist.appendChild(fragment);
+    })
+    .catch(() => { comuniLoaded = false; });
 }
 
 function handleVote(frameId, btnElement) {
@@ -147,8 +241,7 @@ function handleVote(frameId, btnElement) {
     localStorage.setItem('votes', JSON.stringify(votes));
 
     // Visual feedback (unvote)
-    btnElement.classList.remove('voted');
-    btnElement.textContent = '⭐';
+    setVoteButtonState(btnElement, false);
   } else {
     // Add vote
     frameData.count++;
@@ -157,8 +250,7 @@ function handleVote(frameId, btnElement) {
     localStorage.setItem('votes', JSON.stringify(votes));
 
     // Visual feedback (vote)
-    btnElement.classList.add('voted');
-    btnElement.textContent = '🌟';
+    setVoteButtonState(btnElement, true);
 
     // Animation effect
     const rect = btnElement.getBoundingClientRect();
@@ -191,19 +283,20 @@ function resetVotes() {
   updateVoteButtons();
 }
 
-
+function setVoteButtonState(btn, voted) {
+  const frame = frames.find(f => f.id === btn.dataset.frame);
+  const name = frame ? frame.provider.name : 'questa fonte';
+  btn.classList.toggle('voted', voted);
+  btn.textContent = voted ? '🌟' : '⭐';
+  btn.setAttribute('aria-pressed', String(voted));
+  btn.setAttribute('aria-label', voted ? `Togli il voto di oggi a ${name}` : `Vota ${name} per oggi`);
+}
 
 function updateVoteButtons() {
   const today = new Date().toISOString().split('T')[0];
   document.querySelectorAll('.vote-btn').forEach(btn => {
     const fid = btn.dataset.frame;
-    if (votes[fid] && votes[fid].lastDate === today) {
-      btn.classList.add('voted');
-      btn.textContent = '🌟';
-    } else {
-      btn.classList.remove('voted');
-      btn.textContent = '⭐';
-    }
+    setVoteButtonState(btn, Boolean(votes[fid] && votes[fid].lastDate === today));
   });
 }
 
@@ -211,20 +304,40 @@ function updateVoteButtons() {
 function updateVotingModeInternal() {
   const toggle = document.getElementById('voteToggle');
   const rankingSection = document.getElementById('rankingSection');
-  const voteBtns = document.querySelectorAll('.vote-btn');
 
   if (toggle) toggle.checked = votingEnabled;
-
-  if (votingEnabled) {
-    if (rankingSection) rankingSection.style.display = 'block';
-    voteBtns.forEach(btn => btn.style.display = 'flex');
-  } else {
-    if (rankingSection) rankingSection.style.display = 'none';
-    voteBtns.forEach(btn => btn.style.display = 'none');
-  }
+  if (rankingSection) rankingSection.style.display = votingEnabled ? 'block' : 'none';
+  document.body.classList.toggle('voting-off', !votingEnabled);
 }
 
-// --- TAB BAR & RESPONSIVE ---
+// --- FINESTRE MODALI ---
+
+let lastFocused = null;
+
+function openModal(modal) {
+  lastFocused = document.activeElement;
+  modal.style.display = 'flex';
+  const first = modal.querySelector('button, input, select, a[href]');
+  if (first) first.focus();
+}
+
+function closeModal(modal) {
+  if (modal.style.display !== 'flex') return;
+  modal.style.display = 'none';
+  if (lastFocused && document.contains(lastFocused)) lastFocused.focus();
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  const open = ['providersModal', 'modal']
+    .map(id => document.getElementById(id))
+    .find(m => m.style.display === 'flex');
+  if (open) {
+    closeModal(open);
+  } else if (document.body.classList.contains('full-view')) {
+    toggleFullView();
+  }
+});
 
 // --- TAB BAR & RESPONSIVE ---
 
@@ -235,13 +348,19 @@ function renderTabButtons() {
 
   userProviders.forEach((provKey, index) => {
     const btn = document.createElement('button');
+    btn.type = 'button';
     btn.dataset.index = index;
     if (index === 0) btn.classList.add('active');
+    btn.setAttribute('aria-pressed', String(index === 0));
     btn.textContent = availableProviders[provKey]?.name || 'Meteo';
 
     btn.addEventListener('click', () => {
-      document.querySelectorAll('.tab-bar button').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-bar button').forEach(t => {
+        t.classList.remove('active');
+        t.setAttribute('aria-pressed', 'false');
+      });
       btn.classList.add('active');
+      btn.setAttribute('aria-pressed', 'true');
       updateResponsiveLayout();
     });
 
@@ -277,14 +396,12 @@ function updateResponsiveLayout() {
 function toggleFullView() {
   document.body.classList.toggle('full-view');
   const isFull = document.body.classList.contains('full-view');
-  // Optional: Manipulate viewport if needed, or just let CSS do it.
-  // The user wants to see all frames side-by-side. 
-  // Let's use the viewport trick again as it was the only way to fit them on mobile.
+  // Il viewport largo è l'unico modo per far stare le tre fonti affiancate su mobile
 
   const viewportMeta = document.querySelector('meta[name="viewport"]');
   if (isFull) {
     if (viewportMeta) viewportMeta.content = "width=1200";
-    document.getElementById('modal').style.display = 'none';
+    closeModal(document.getElementById('modal'));
     document.getElementById('closeFullViewBtn').style.display = 'block';
   } else {
     if (viewportMeta) viewportMeta.content = "width=device-width, initial-scale=1.0";
@@ -293,18 +410,36 @@ function toggleFullView() {
   updateResponsiveLayout();
 }
 
+// --- CONDIVIDI ---
+
+async function shareCity() {
+  const feedback = document.getElementById('shareFeedback');
+  const url = new URL(location.pathname, location.origin);
+  url.searchParams.set('citta', currentCity);
+  const link = url.toString();
+
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: 'Tripolemme', text: `Meteo di ${prettyCity(currentCity)}`, url: link });
+      return;
+    } catch (e) {
+      if (e.name === 'AbortError') return; // l'utente ha annullato
+    }
+  }
+
+  try {
+    await navigator.clipboard.writeText(link);
+    feedback.textContent = 'Link copiato! 📋';
+  } catch (e) {
+    feedback.textContent = link;
+  }
+}
+
 // --- INIT ---
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Ensure wrappers are found if not already
-  frames.forEach(f => {
-    if (f.iframe && !f.wrapper) {
-      f.wrapper = f.iframe.closest('.frame-wrapper') || f.iframe.parentElement;
-    }
-  });
-
-  updateFrames(savedCity);
-  document.getElementById('cityInput').value = savedCity;
+  updateFrames(currentCity);
+  document.getElementById('cityInput').value = currentCity;
   updateVoteButtons();
   updateVotingModeInternal();
   updateResponsiveLayout();
@@ -314,10 +449,6 @@ document.addEventListener('DOMContentLoaded', () => {
 window.addEventListener('load', updateResponsiveLayout);
 
 window.addEventListener('resize', updateResponsiveLayout);
-
-// ... (Rest of code)
-
-// Event Listeners
 
 // --- MANAGE PROVIDERS LOGIC ---
 
@@ -338,12 +469,16 @@ function populateProvidersModal() {
 
 document.getElementById('manageProvidersBtn').addEventListener('click', () => {
   populateProvidersModal();
-  document.getElementById('modal').style.display = 'none'; // Close settings modal
-  document.getElementById('providersModal').style.display = 'flex';
+  closeModal(document.getElementById('modal')); // Close settings modal
+  openModal(document.getElementById('providersModal'));
 });
 
 document.getElementById('closeProvidersModalBtn').addEventListener('click', () => {
-  document.getElementById('providersModal').style.display = 'none';
+  closeModal(document.getElementById('providersModal'));
+});
+
+document.getElementById('providersModal').addEventListener('click', e => {
+  if (e.target.id === 'providersModal') closeModal(e.target);
 });
 
 document.getElementById('saveProvidersSetupBtn').addEventListener('click', () => {
@@ -376,11 +511,13 @@ document.getElementById('saveProvidersSetupBtn').addEventListener('click', () =>
 document.getElementById('settings').addEventListener('click', () => {
   renderFavorites();
   renderRanking();
-  document.getElementById('modal').style.display = 'flex';
-  document.getElementById('modal').style.display = 'flex';
+  loadComuni();
+  document.getElementById('shareFeedback').textContent = '';
+  document.getElementById('cityInput').value = currentCity;
   // Re-sync switch state when opening modal
   const toggle = document.getElementById('voteToggle');
   if (toggle) toggle.checked = votingEnabled;
+  openModal(document.getElementById('modal'));
 });
 
 document.getElementById('voteToggle').addEventListener('change', (e) => {
@@ -393,11 +530,13 @@ document.getElementById('resetRanking').addEventListener('click', resetVotes);
 
 document.getElementById('saveCity').addEventListener('click', saveAction);
 
+document.getElementById('shareBtn').addEventListener('click', shareCity);
+
 document.getElementById('fullViewBtn').addEventListener('click', toggleFullView);
 document.getElementById('closeFullViewBtn').addEventListener('click', toggleFullView);
 
 document.getElementById('modal').addEventListener('click', e => {
-  if (e.target.id === 'modal') document.getElementById('modal').style.display = 'none';
+  if (e.target.id === 'modal') closeModal(e.target);
 });
 
 document.getElementById('cityInput').addEventListener('keydown', e => {
@@ -413,4 +552,10 @@ document.querySelectorAll('.vote-btn').forEach(btn => {
   });
 });
 
+// --- PWA / OFFLINE ---
 
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('service-worker.js').catch(() => { });
+  });
+}

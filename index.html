@@ -3,74 +3,74 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; manifest-src 'self'; connect-src 'self'; frame-src https://www.3bmeteo.com https://www.google.com https://www.ilmeteo.it https://www.meteoeradar.it https://www.meteogiuliacci.it https://www.meteoam.it; object-src 'none'; base-uri 'self'; form-action 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; manifest-src 'self'; connect-src 'self'; worker-src 'self'; frame-src https://www.3bmeteo.com https://www.google.com https://www.ilmeteo.it https://www.meteoeradar.it https://www.meteogiuliacci.it https://www.meteoam.it; object-src 'none'; base-uri 'self'; form-action 'none'">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tripolemme</title>
   <link rel="stylesheet" href="style.css">
   <link rel="icon" href="icons/icon.ico">
   <link rel="manifest" href="manifest.webmanifest">
-  <meta name="theme-color" content="#E1EB87FF">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#E1EB87" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#14141e" media="(prefers-color-scheme: dark)">
 </head>
 
 <body>
 
-  <!-- <div class="header"></div> -->
-
-  <!-- TAB BAR MOBILE -->
-
   <!-- Close Full View Button (Hidden by default) -->
-  <button id="closeFullViewBtn"
-    style="display:none; position:fixed; top:20px; left:50%; transform:translateX(-50%); z-index:20000; padding:10px 20px; background:#ff5252; color:white; border:none; border-radius:20px; font-weight:bold; cursor:pointer; box-shadow:0 5px 15px rgba(0,0,0,0.3);">Chiudi
-    Vista Completa ❌</button>
+  <button id="closeFullViewBtn" type="button">Chiudi Vista Completa ❌</button>
 
   <!-- TAB BAR MOBILE -->
-  <div class="tab-bar">
-    <button data-index="0" class="active">3BMeteo</button>
-    <button data-index="1">Google</button>
-    <button data-index="2">IlMeteo</button>
-  </div>
+  <nav class="tab-bar" aria-label="Fonti meteo">
+    <button type="button" data-index="0" class="active">3BMeteo</button>
+    <button type="button" data-index="1">Google</button>
+    <button type="button" data-index="2">IlMeteo</button>
+  </nav>
 
   <!-- FLOATING BUTTON -->
-  <div id="settings">
-    <svg viewBox="0 0 24 24">
+  <button id="settings" type="button" aria-label="Impostazioni" aria-haspopup="dialog" aria-controls="modal">
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
       <path
         d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" />
     </svg>
-  </div>
+  </button>
 
   <!-- IFRAME -->
-  <div class="container">
+  <main class="container">
     <div class="frame-wrapper">
-      <iframe id="frame1" src=""></iframe>
-      <div class="vote-btn" data-frame="frame1">⭐</div>
+      <iframe id="frame1" src="" title="Meteo 1"></iframe>
+      <a class="float-btn open-btn" data-frame="frame1" href="#" target="_blank" rel="noopener noreferrer"
+        aria-label="Apri in una nuova scheda" title="Apri in una nuova scheda">↗</a>
+      <button type="button" class="float-btn vote-btn" data-frame="frame1" aria-pressed="false">⭐</button>
     </div>
     <div class="frame-wrapper">
-      <iframe id="frame2" src=""></iframe>
-      <div class="vote-btn" data-frame="frame2">⭐</div>
+      <iframe id="frame2" src="" title="Meteo 2"></iframe>
+      <a class="float-btn open-btn" data-frame="frame2" href="#" target="_blank" rel="noopener noreferrer"
+        aria-label="Apri in una nuova scheda" title="Apri in una nuova scheda">↗</a>
+      <button type="button" class="float-btn vote-btn" data-frame="frame2" aria-pressed="false">⭐</button>
     </div>
     <div class="frame-wrapper">
-      <iframe id="frame3" src=""></iframe>
-      <div class="vote-btn" data-frame="frame3">⭐</div>
+      <iframe id="frame3" src="" title="Meteo 3"></iframe>
+      <a class="float-btn open-btn" data-frame="frame3" href="#" target="_blank" rel="noopener noreferrer"
+        aria-label="Apri in una nuova scheda" title="Apri in una nuova scheda">↗</a>
+      <button type="button" class="float-btn vote-btn" data-frame="frame3" aria-pressed="false">⭐</button>
     </div>
-  </div>
+  </main>
 
   <!-- MODALE -->
-  <div id="modal">
-    <div id="modalContent">
-      <h3>Impostazioni Meteo</h3>
+  <div id="modal" class="overlay" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div id="modalContent" class="dialog">
+      <h3 id="modalTitle">Impostazioni Meteo</h3>
 
-      <button id="fullViewBtn"
-        style="width:100%; background:#3a8fff; color:white; border:none; padding:10px; border-radius:12px; font-weight:bold; cursor:pointer; margin-top:10px; margin-bottom:5px;">Vista
-        Completa 📸</button>
+      <button id="fullViewBtn" type="button" class="primary-btn">Vista Completa 📸</button>
 
-      <button id="manageProvidersBtn"
-        style="width:100%; background:#3a8fff; color:white; border:none; padding:10px; border-radius:12px; font-weight:bold; cursor:pointer; margin-bottom:5px;">Personalizza
-        Fonti Meteo 🪛</button>
+      <button id="manageProvidersBtn" type="button" class="primary-btn">Personalizza Fonti Meteo 🪛</button>
 
-      <div class="toggle-container"
-        style="display:flex; align-items:center; justify-content:space-between; margin: 15px 0;">
-        <label for="voteToggle" style="font-weight:bold; color:#333;">Modalità Voto ⭐</label>
+      <button id="shareBtn" type="button" class="primary-btn">Condividi link 🔗</button>
+      <p id="shareFeedback" class="feedback" role="status" aria-live="polite"></p>
+
+      <div class="toggle-container">
+        <label for="voteToggle" class="toggle-label">Modalità Voto ⭐</label>
         <label class="switch">
           <input type="checkbox" id="voteToggle" checked>
           <span class="slider round"></span>
@@ -78,55 +78,47 @@
       </div>
 
       <div id="rankingSection">
-        <label class="input-label">Classifica meteo preferiti:</label>
+        <span class="input-label">Classifica meteo preferiti:</span>
         <div id="rankingContainer"></div>
-        <button id="resetRanking">Reset Classifica 🗑️</button>
+        <button id="resetRanking" type="button">Reset Classifica 🗑️</button>
       </div>
 
       <hr class="separator">
 
-      <label class="input-label">I tuoi preferiti:</label>
+      <span class="input-label">I tuoi preferiti:</span>
       <div id="favoritesContainer"></div>
 
       <hr class="separator">
 
-      <label class="input-label">Cerca nuova città:</label>
+      <label class="input-label" for="cityInput">Cerca nuova città:</label>
       <div class="input-group">
-        <input type="text" id="cityInput" placeholder="es. Roma, Bari...">
-        <button id="saveCity">Salva</button>
+        <input type="text" id="cityInput" list="comuniList" autocomplete="off" placeholder="es. Roma, Bari...">
+        <datalist id="comuniList"></datalist>
+        <button id="saveCity" type="button">Salva</button>
       </div>
     </div>
   </div>
 
-
   <!-- MODALE PERSONALIZZA FONTI -->
-  <div id="providersModal"
-    style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); backdrop-filter:blur(4px); z-index:3000; justify-content:center; align-items:center;">
-    <div
-      style="background:white; padding:25px; border-radius:20px; width:90%; max-width:350px; text-align:center; border:2px solid #3a8fff;">
-      <h3 style="margin-top:0; color:#333; font-family:sans-serif;">Personalizza Fonti</h3>
+  <div id="providersModal" class="overlay" role="dialog" aria-modal="true" aria-labelledby="providersTitle">
+    <div class="dialog dialog-blue">
+      <h3 id="providersTitle">Personalizza Fonti</h3>
 
-      <div style="margin-bottom: 10px; text-align: left;">
-        <label style="font-weight:bold; font-size:0.9rem;">1° Posto:</label>
-        <select id="slot1"
-          style="width:100%; padding:8px; border-radius:8px; margin-top:5px; border:1px solid #ccc;"></select>
+      <div class="slot">
+        <label for="slot1">1° Posto:</label>
+        <select id="slot1"></select>
       </div>
-      <div style="margin-bottom: 10px; text-align: left;">
-        <label style="font-weight:bold; font-size:0.9rem;">2° Posto:</label>
-        <select id="slot2"
-          style="width:100%; padding:8px; border-radius:8px; margin-top:5px; border:1px solid #ccc;"></select>
+      <div class="slot">
+        <label for="slot2">2° Posto:</label>
+        <select id="slot2"></select>
       </div>
-      <div style="margin-bottom: 20px; text-align: left;">
-        <label style="font-weight:bold; font-size:0.9rem;">3° Posto:</label>
-        <select id="slot3"
-          style="width:100%; padding:8px; border-radius:8px; margin-top:5px; border:1px solid #ccc;"></select>
+      <div class="slot slot-last">
+        <label for="slot3">3° Posto:</label>
+        <select id="slot3"></select>
       </div>
 
-      <button id="saveProvidersSetupBtn"
-        style="width:100%; background:#3a8fff; color:white; border:none; padding:10px; border-radius:12px; font-weight:bold; cursor:pointer;">Applica
-        e Ricarica</button>
-      <button id="closeProvidersModalBtn"
-        style="width:100%; background:#ccc; color:black; border:none; padding:10px; border-radius:12px; font-weight:bold; cursor:pointer; margin-top:10px;">Annulla</button>
+      <button id="saveProvidersSetupBtn" type="button" class="primary-btn">Applica e Ricarica</button>
+      <button id="closeProvidersModalBtn" type="button" class="secondary-btn">Annulla</button>
     </div>
   </div>
 
