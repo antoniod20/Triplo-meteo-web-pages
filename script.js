@@ -201,27 +201,91 @@ function saveAction() {
   closeModal(document.getElementById('modal'));
 }
 
-// Suggerimenti città: elenco ufficiale ISTAT dei comuni, caricato solo alla prima apertura
-let comuniLoaded = false;
+// Suggerimenti città: elenco ufficiale ISTAT dei comuni, caricato solo alla prima apertura.
+// La lista è disegnata da noi perché il <datalist> nativo non funziona su molti browser mobili.
+let comuni = [];
+let comuniLoading = false;
+let suggestionIndex = -1;
+
+function normalizeText(text) {
+  return text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/['’`]/g, '').trim();
+}
 
 function loadComuni() {
-  if (comuniLoaded) return;
-  comuniLoaded = true;
+  if (comuni.length || comuniLoading) return;
+  comuniLoading = true;
 
   fetch('comuni.json')
     .then(res => res.ok ? res.json() : [])
     .then(list => {
-      const datalist = document.getElementById('comuniList');
-      const fragment = document.createDocumentFragment();
-      list.forEach(([name, sigla]) => {
-        const option = document.createElement('option');
-        option.value = name;
-        option.label = sigla;
-        fragment.appendChild(option);
-      });
-      datalist.appendChild(fragment);
+      comuni = list.map(([name, sigla]) => ({ name, sigla, key: normalizeText(name) }));
     })
-    .catch(() => { comuniLoaded = false; });
+    .catch(() => { })
+    .finally(() => { comuniLoading = false; });
+}
+
+function hideSuggestions() {
+  const list = document.getElementById('citySuggestions');
+  list.hidden = true;
+  list.innerHTML = '';
+  suggestionIndex = -1;
+  const input = document.getElementById('cityInput');
+  input.setAttribute('aria-expanded', 'false');
+  input.removeAttribute('aria-activedescendant');
+}
+
+function showSuggestions() {
+  const input = document.getElementById('cityInput');
+  const list = document.getElementById('citySuggestions');
+  const query = normalizeText(input.value);
+  if (query.length < 2 || !comuni.length) return hideSuggestions();
+
+  // Prima i comuni che iniziano con il testo scritto, poi quelli che lo contengono
+  const starts = comuni.filter(c => c.key.startsWith(query));
+  const contains = comuni.filter(c => !c.key.startsWith(query) && c.key.includes(query));
+  const matches = starts.concat(contains).slice(0, 8);
+  if (!matches.length) return hideSuggestions();
+
+  list.innerHTML = '';
+  suggestionIndex = -1;
+  matches.forEach((c, i) => {
+    const li = document.createElement('li');
+    li.id = `suggestion-${i}`;
+    li.setAttribute('role', 'option');
+    li.dataset.name = c.name;
+
+    const name = document.createElement('span');
+    name.textContent = c.name;
+    const sigla = document.createElement('span');
+    sigla.className = 'sigla';
+    sigla.textContent = c.sigla;
+    li.append(name, sigla);
+
+    // pointerdown invece di click: arriva prima che l'input perda il focus
+    li.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      chooseSuggestion(c.name);
+    });
+    list.appendChild(li);
+  });
+
+  list.hidden = false;
+  input.setAttribute('aria-expanded', 'true');
+}
+
+function highlightSuggestion(index) {
+  const items = document.querySelectorAll('#citySuggestions li');
+  if (!items.length) return;
+  suggestionIndex = (index + items.length) % items.length;
+  items.forEach((li, i) => li.setAttribute('aria-selected', String(i === suggestionIndex)));
+  items[suggestionIndex].scrollIntoView({ block: 'nearest' });
+  document.getElementById('cityInput').setAttribute('aria-activedescendant', items[suggestionIndex].id);
+}
+
+function chooseSuggestion(name) {
+  document.getElementById('cityInput').value = name;
+  hideSuggestions();
+  saveAction();
 }
 
 function handleVote(frameId, btnElement) {
@@ -539,8 +603,36 @@ document.getElementById('modal').addEventListener('click', e => {
   if (e.target.id === 'modal') closeModal(e.target);
 });
 
-document.getElementById('cityInput').addEventListener('keydown', e => {
-  if (e.key === 'Enter') saveAction();
+const cityInput = document.getElementById('cityInput');
+
+cityInput.addEventListener('input', showSuggestions);
+
+// Toccando il campo si seleziona la città attuale, così si scrive subito quella nuova
+cityInput.addEventListener('focus', () => cityInput.select());
+
+cityInput.addEventListener('blur', hideSuggestions);
+
+cityInput.addEventListener('keydown', e => {
+  const listOpen = !document.getElementById('citySuggestions').hidden;
+
+  if (e.key === 'ArrowDown' && listOpen) {
+    e.preventDefault();
+    highlightSuggestion(suggestionIndex + 1);
+  } else if (e.key === 'ArrowUp' && listOpen) {
+    e.preventDefault();
+    highlightSuggestion(suggestionIndex - 1);
+  } else if (e.key === 'Escape' && listOpen) {
+    e.stopPropagation(); // chiude solo la lista, non la finestra
+    hideSuggestions();
+  } else if (e.key === 'Enter') {
+    const selected = document.querySelector('#citySuggestions li[aria-selected="true"]');
+    if (listOpen && selected) {
+      chooseSuggestion(selected.dataset.name);
+    } else {
+      hideSuggestions();
+      saveAction();
+    }
+  }
 });
 
 // Vote buttons

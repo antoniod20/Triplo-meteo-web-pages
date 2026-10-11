@@ -790,3 +790,58 @@ body.full-view .open-btn {
     bottom: 150px;
   }
 }
+
+/* ---------- SUGGERIMENTI CITTÀ ---------- */
+
+.input-group {
+  position: relative;
+}
+
+/* La lista si apre sopra il campo: sotto, su mobile, c'è la tastiera */
+.suggestions {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(100% - 12px);
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  text-align: left;
+  max-height: 260px;
+  overflow-y: auto;
+  background: var(--dialog-bg);
+  color: var(--dialog-text);
+  border: 2px solid rgb(243, 240, 78);
+  border-radius: 12px;
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.2);
+  z-index: 10;
+}
+
+.suggestions li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.suggestions li[aria-selected="true"] {
+  background: rgb(243, 240, 78);
+  color: #000;
+}
+
+@media (hover: hover) {
+  .suggestions li:hover {
+    background: rgba(243, 240, 78, 0.35);
+  }
+}
+
+.suggestions .sigla {
+  color: var(--muted-text);
+  font-size: 0.85rem;
+}
+
+.suggestions li[aria-selected="true"] .sigla {
+  color: #444;
+}
