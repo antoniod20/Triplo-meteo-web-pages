@@ -5,121 +5,227 @@
   <meta charset="UTF-8">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; manifest-src 'self'; connect-src 'self' https://api.open-meteo.com https://geocoding-api.open-meteo.com; worker-src 'self'; frame-src https://www.3bmeteo.com https://www.google.com https://www.ilmeteo.it https://www.meteoeradar.it https://www.meteogiuliacci.it https://www.meteoam.it; object-src 'none'; base-uri 'self'; form-action 'none'">
   <meta name="referrer" content="strict-origin-when-cross-origin">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Tripolemme</title>
   <link rel="stylesheet" href="style.css">
   <link rel="icon" href="icons/icon.ico">
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="color-scheme" content="light dark">
-  <meta name="theme-color" content="#E1EB87" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#14141e" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#FDD835" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#14140f" media="(prefers-color-scheme: dark)">
 </head>
 
 <body>
 
-  <!-- Close Full View Button (Hidden by default) -->
-  <button id="closeFullViewBtn" type="button">Chiudi Vista Completa ❌</button>
+  <!-- Icone Material Symbols (Apache 2.0), definite una volta e riusate con <use> -->
+  <svg class="icon-sprite" aria-hidden="true" focusable="false">
+    <symbol id="i-settings" viewBox="0 0 24 24">
+      <path
+        d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" />
+    </symbol>
+    <symbol id="i-agent" viewBox="0 0 24 24">
+      <path fill-rule="evenodd"
+        d="M12 1.5a1.5 1.5 0 0 1 .75 2.8V6H17a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V9a3 3 0 0 1 3-3h4.25V4.3A1.5 1.5 0 0 1 12 1.5zM9 10.5a1.75 1.75 0 1 0 0 3.5 1.75 1.75 0 0 0 0-3.5zm6 0a1.75 1.75 0 1 0 0 3.5 1.75 1.75 0 0 0 0-3.5zM9 16v1.5h6V16H9zM1.5 11h1.5v4H1.5zM21 11h1.5v4H21z" />
+    </symbol>
+    <symbol id="i-open" viewBox="0 0 24 24">
+      <path
+        d="M19 19H5V5h7V3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z" />
+    </symbol>
+    <symbol id="i-star" viewBox="0 0 24 24">
+      <path d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+    </symbol>
+    <symbol id="i-star-outline" viewBox="0 0 24 24">
+      <path
+        d="m22 9.24-7.19-.62L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.63-7.03L22 9.24zM12 15.4l-3.76 2.27 1-4.28-3.32-2.88 4.38-.38L12 6.1l1.71 4.04 4.38.38-3.32 2.88 1 4.28L12 15.4z" />
+    </symbol>
+    <symbol id="i-close" viewBox="0 0 24 24">
+      <path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+    </symbol>
+    <symbol id="i-share" viewBox="0 0 24 24">
+      <path
+        d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11A2.99 2.99 0 0 0 21 5a3 3 0 1 0-5.91.7L8.04 9.81A2.99 2.99 0 0 0 3 12a3 3 0 0 0 5.04 2.19l7.12 4.16c-.05.21-.08.43-.08.65A2.92 2.92 0 1 0 18 16.08z" />
+    </symbol>
+    <symbol id="i-tune" viewBox="0 0 24 24">
+      <path
+        d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z" />
+    </symbol>
+    <symbol id="i-fullscreen" viewBox="0 0 24 24">
+      <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z" />
+    </symbol>
+    <symbol id="i-search" viewBox="0 0 24 24">
+      <path
+        d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
+    </symbol>
+    <symbol id="i-delete" viewBox="0 0 24 24">
+      <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
+    </symbol>
+    <symbol id="i-place" viewBox="0 0 24 24">
+      <path
+        d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 0 5z" />
+    </symbol>
+    <symbol id="i-swipe" viewBox="0 0 24 24">
+      <path d="M8.41 7.41 7 6l-6 6 6 6 1.41-1.41L3.83 12zM15.59 7.41 17 6l6 6-6 6-1.41-1.41L20.17 12z" />
+    </symbol>
+  </svg>
 
-  <!-- TAB BAR MOBILE -->
+  <!-- Chiudi vista completa -->
+  <button id="closeFullViewBtn" type="button" class="extended-fab">
+    <svg class="icon" aria-hidden="true"><use href="#i-close" /></svg>
+    Chiudi vista completa
+  </button>
+
+  <!-- NAVIGATION BAR (mobile) -->
   <nav class="tab-bar" aria-label="Fonti meteo">
     <button type="button" data-index="0" class="active">3BMeteo</button>
     <button type="button" data-index="1">Google</button>
     <button type="button" data-index="2">IlMeteo</button>
   </nav>
 
-  <!-- AGENTE: previsione combinata dei modelli meteo -->
-  <button id="agentBtn" type="button" aria-label="Previsione combinata dei modelli meteo" title="Previsione combinata"
-    aria-haspopup="dialog" aria-controls="agentModal">
-    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-      <path fill-rule="evenodd"
-        d="M12 1.5a1.5 1.5 0 0 1 .75 2.8V6H17a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V9a3 3 0 0 1 3-3h4.25V4.3A1.5 1.5 0 0 1 12 1.5zM9 10.5a1.75 1.75 0 1 0 0 3.5 1.75 1.75 0 0 0 0-3.5zm6 0a1.75 1.75 0 1 0 0 3.5 1.75 1.75 0 0 0 0-3.5zM9 16v1.5h6V16H9zM1.5 11h1.5v4H1.5zM21 11h1.5v4H21z" />
-    </svg>
-  </button>
-
-  <!-- FLOATING BUTTON -->
-  <button id="settings" type="button" aria-label="Impostazioni" aria-haspopup="dialog" aria-controls="modal">
-    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-      <path
-        d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" />
-    </svg>
-  </button>
+  <!-- FAB: agente e impostazioni -->
+  <div class="fab-stack">
+    <button id="settings" type="button" class="fab fab-small" aria-label="Impostazioni" title="Impostazioni"
+      aria-haspopup="dialog" aria-controls="modal">
+      <svg class="icon" aria-hidden="true"><use href="#i-settings" /></svg>
+    </button>
+    <button id="agentBtn" type="button" class="fab fab-primary" aria-label="Previsione combinata dei modelli meteo"
+      title="Previsione combinata" aria-haspopup="dialog" aria-controls="agentModal">
+      <svg class="icon" aria-hidden="true"><use href="#i-agent" /></svg>
+    </button>
+  </div>
 
   <!-- IFRAME -->
   <main class="container">
     <div class="frame-wrapper">
       <iframe id="frame1" src="" title="Meteo 1"></iframe>
-      <a class="float-btn open-btn" data-frame="frame1" href="#" target="_blank" rel="noopener noreferrer"
-        aria-label="Apri in una nuova scheda" title="Apri in una nuova scheda">↗</a>
-      <button type="button" class="float-btn vote-btn" data-frame="frame1" aria-pressed="false">⭐</button>
+      <div class="frame-actions">
+        <a class="fab fab-small open-btn" data-frame="frame1" href="#" target="_blank" rel="noopener noreferrer"
+          aria-label="Apri in una nuova scheda" title="Apri in una nuova scheda">
+          <svg class="icon" aria-hidden="true"><use href="#i-open" /></svg>
+        </a>
+        <button type="button" class="fab fab-small vote-btn" data-frame="frame1" aria-pressed="false">
+          <svg class="icon icon-off" aria-hidden="true"><use href="#i-star-outline" /></svg>
+          <svg class="icon icon-on" aria-hidden="true"><use href="#i-star" /></svg>
+        </button>
+      </div>
     </div>
     <div class="frame-wrapper">
       <iframe id="frame2" src="" title="Meteo 2"></iframe>
-      <a class="float-btn open-btn" data-frame="frame2" href="#" target="_blank" rel="noopener noreferrer"
-        aria-label="Apri in una nuova scheda" title="Apri in una nuova scheda">↗</a>
-      <button type="button" class="float-btn vote-btn" data-frame="frame2" aria-pressed="false">⭐</button>
+      <div class="frame-actions">
+        <a class="fab fab-small open-btn" data-frame="frame2" href="#" target="_blank" rel="noopener noreferrer"
+          aria-label="Apri in una nuova scheda" title="Apri in una nuova scheda">
+          <svg class="icon" aria-hidden="true"><use href="#i-open" /></svg>
+        </a>
+        <button type="button" class="fab fab-small vote-btn" data-frame="frame2" aria-pressed="false">
+          <svg class="icon icon-off" aria-hidden="true"><use href="#i-star-outline" /></svg>
+          <svg class="icon icon-on" aria-hidden="true"><use href="#i-star" /></svg>
+        </button>
+      </div>
     </div>
     <div class="frame-wrapper">
       <iframe id="frame3" src="" title="Meteo 3"></iframe>
-      <a class="float-btn open-btn" data-frame="frame3" href="#" target="_blank" rel="noopener noreferrer"
-        aria-label="Apri in una nuova scheda" title="Apri in una nuova scheda">↗</a>
-      <button type="button" class="float-btn vote-btn" data-frame="frame3" aria-pressed="false">⭐</button>
+      <div class="frame-actions">
+        <a class="fab fab-small open-btn" data-frame="frame3" href="#" target="_blank" rel="noopener noreferrer"
+          aria-label="Apri in una nuova scheda" title="Apri in una nuova scheda">
+          <svg class="icon" aria-hidden="true"><use href="#i-open" /></svg>
+        </a>
+        <button type="button" class="fab fab-small vote-btn" data-frame="frame3" aria-pressed="false">
+          <svg class="icon icon-off" aria-hidden="true"><use href="#i-star-outline" /></svg>
+          <svg class="icon icon-on" aria-hidden="true"><use href="#i-star" /></svg>
+        </button>
+      </div>
     </div>
   </main>
 
-  <!-- MODALE -->
+  <!-- IMPOSTAZIONI (bottom sheet su mobile, dialog su desktop) -->
   <div id="modal" class="overlay" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-    <div id="modalContent" class="dialog">
-      <h3 id="modalTitle">Impostazioni Meteo</h3>
+    <div id="modalContent" class="dialog sheet">
+      <div class="sheet-handle" aria-hidden="true"></div>
+      <header class="dialog-header">
+        <h2 id="modalTitle">Impostazioni</h2>
+        <button type="button" class="icon-btn" id="closeSettingsBtn" aria-label="Chiudi">
+          <svg class="icon" aria-hidden="true"><use href="#i-close" /></svg>
+        </button>
+      </header>
 
-      <button id="fullViewBtn" type="button" class="primary-btn">Vista Completa 📸</button>
+      <section class="sheet-section">
+        <label class="section-title" for="cityInput">Città</label>
+        <div class="input-group">
+          <ul id="citySuggestions" class="suggestions" role="listbox" aria-label="Comuni suggeriti" hidden></ul>
+          <div class="text-field">
+            <svg class="icon" aria-hidden="true"><use href="#i-search" /></svg>
+            <input type="text" id="cityInput" role="combobox" aria-autocomplete="list" aria-expanded="false"
+              aria-controls="citySuggestions" autocomplete="off" placeholder="Cerca un comune, es. Bari">
+          </div>
+          <button id="saveCity" type="button" class="btn btn-filled">Mostra</button>
+        </div>
+        <span class="section-subtitle">Preferiti</span>
+        <div id="favoritesContainer" class="chip-set"></div>
+      </section>
 
-      <button id="manageProvidersBtn" type="button" class="primary-btn">Personalizza Fonti Meteo 🪛</button>
+      <section class="sheet-section list">
+        <button id="manageProvidersBtn" type="button" class="list-item">
+          <svg class="icon" aria-hidden="true"><use href="#i-tune" /></svg>
+          <span>Personalizza fonti meteo</span>
+        </button>
+        <button id="shareBtn" type="button" class="list-item">
+          <svg class="icon" aria-hidden="true"><use href="#i-share" /></svg>
+          <span>Condividi link</span>
+        </button>
+        <p id="shareFeedback" class="feedback" role="status" aria-live="polite"></p>
+        <button id="fullViewBtn" type="button" class="list-item">
+          <svg class="icon" aria-hidden="true"><use href="#i-fullscreen" /></svg>
+          <span>Vista completa</span>
+        </button>
+      </section>
 
-      <button id="shareBtn" type="button" class="primary-btn">Condividi link 🔗</button>
-      <p id="shareFeedback" class="feedback" role="status" aria-live="polite"></p>
+      <section class="sheet-section">
+        <div class="toggle-container">
+          <label for="voteToggle" class="toggle-label">
+            <svg class="icon" aria-hidden="true"><use href="#i-star" /></svg>
+            Modalità voto
+          </label>
+          <label class="switch">
+            <input type="checkbox" id="voteToggle" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
 
-      <div class="toggle-container">
-        <label for="voteToggle" class="toggle-label">Modalità Voto ⭐</label>
-        <label class="switch">
-          <input type="checkbox" id="voteToggle" checked>
-          <span class="slider round"></span>
-        </label>
-      </div>
-
-      <div id="rankingSection">
-        <span class="input-label">Classifica meteo preferiti:</span>
-        <div id="rankingContainer"></div>
-        <button id="resetRanking" type="button">Reset Classifica 🗑️</button>
-      </div>
-
-      <hr class="separator">
-
-      <span class="input-label">I tuoi preferiti:</span>
-      <div id="favoritesContainer"></div>
-
-      <hr class="separator">
-
-      <label class="input-label" for="cityInput">Cerca nuova città:</label>
-      <div class="input-group">
-        <ul id="citySuggestions" class="suggestions" role="listbox" aria-label="Comuni suggeriti" hidden></ul>
-        <input type="text" id="cityInput" role="combobox" aria-autocomplete="list" aria-expanded="false"
-          aria-controls="citySuggestions" autocomplete="off" placeholder="es. Roma, Bari...">
-
-        <button id="saveCity" type="button">Salva</button>
-      </div>
+        <div id="rankingSection">
+          <span class="section-subtitle">Classifica dei tuoi meteo preferiti</span>
+          <div id="rankingContainer"></div>
+          <button id="resetRanking" type="button" class="btn btn-text btn-danger">
+            <svg class="icon" aria-hidden="true"><use href="#i-delete" /></svg>
+            Azzera classifica
+          </button>
+        </div>
+      </section>
     </div>
   </div>
 
-  <!-- MODALE AGENTE -->
+  <!-- AGENTE -->
   <div id="agentModal" class="overlay" role="dialog" aria-modal="true" aria-labelledby="agentTitle">
-    <div class="dialog dialog-agent">
-      <button type="button" class="dialog-close" id="closeAgentBtn" aria-label="Chiudi">✕</button>
-      <h3 id="agentTitle">🤖 Previsione combinata</h3>
-      <p id="agentCity" class="agent-city"></p>
+    <div class="dialog sheet dialog-agent">
+      <div class="sheet-handle" aria-hidden="true"></div>
+      <header class="dialog-header">
+        <div>
+          <h2 id="agentTitle">Previsione combinata</h2>
+          <p id="agentCity" class="agent-city"></p>
+        </div>
+        <button type="button" class="icon-btn" id="closeAgentBtn" aria-label="Chiudi">
+          <svg class="icon" aria-hidden="true"><use href="#i-close" /></svg>
+        </button>
+      </header>
 
       <div id="agentDays" class="agent-days" role="group" aria-label="Scegli il giorno"></div>
 
-      <div id="agentResult" aria-live="polite"></div>
+      <div id="agentSwipeArea" class="agent-swipe-area">
+        <div id="agentResult" aria-live="polite"></div>
+      </div>
+
+      <p class="agent-hint">
+        <svg class="icon" aria-hidden="true"><use href="#i-swipe" /></svg>
+        Scorri a destra o a sinistra per cambiare giorno
+      </p>
 
       <p class="agent-credits">
         Confronto tra i modelli ECMWF, ICON, GFS, Météo-France e ItaliaMeteo.
@@ -128,26 +234,30 @@
     </div>
   </div>
 
-  <!-- MODALE PERSONALIZZA FONTI -->
-  <div id="providersModal" class="overlay" role="dialog" aria-modal="true" aria-labelledby="providersTitle">
-    <div class="dialog dialog-blue">
-      <h3 id="providersTitle">Personalizza Fonti</h3>
+  <!-- PERSONALIZZA FONTI -->
+  <div id="providersModal" class="overlay overlay-center" role="dialog" aria-modal="true"
+    aria-labelledby="providersTitle">
+    <div class="dialog dialog-basic">
+      <h2 id="providersTitle">Personalizza fonti</h2>
+      <p class="dialog-supporting">Scegli quali siti mostrare e in che ordine.</p>
 
       <div class="slot">
-        <label for="slot1">1° Posto:</label>
+        <label for="slot1">1° posto</label>
         <select id="slot1"></select>
       </div>
       <div class="slot">
-        <label for="slot2">2° Posto:</label>
+        <label for="slot2">2° posto</label>
         <select id="slot2"></select>
       </div>
-      <div class="slot slot-last">
-        <label for="slot3">3° Posto:</label>
+      <div class="slot">
+        <label for="slot3">3° posto</label>
         <select id="slot3"></select>
       </div>
 
-      <button id="saveProvidersSetupBtn" type="button" class="primary-btn">Applica e Ricarica</button>
-      <button id="closeProvidersModalBtn" type="button" class="secondary-btn">Annulla</button>
+      <div class="dialog-actions">
+        <button id="closeProvidersModalBtn" type="button" class="btn btn-text">Annulla</button>
+        <button id="saveProvidersSetupBtn" type="button" class="btn btn-filled">Applica</button>
+      </div>
     </div>
   </div>
 

@@ -4,7 +4,7 @@
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#87CEEB",
-  "theme_color": "#E1EB87FF",
+  "theme_color": "#FDD835",
   "description": "Visualizza 3 siti meteo in un’unica interfaccia responsive.",
   "icons": [
     {

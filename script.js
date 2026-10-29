@@ -130,7 +130,7 @@ function renderFavorites() {
     const del = document.createElement('button');
     del.type = 'button';
     del.className = 'fav-del';
-    del.textContent = '✕';
+    del.appendChild(svgIcon('i-close'));
     del.setAttribute('aria-label', `Rimuovi ${prettyCity(fav)} dai preferiti`);
     del.onclick = () => {
       favorites = favorites.filter(f => f !== fav);
@@ -351,7 +351,6 @@ function setVoteButtonState(btn, voted) {
   const frame = frames.find(f => f.id === btn.dataset.frame);
   const name = frame ? frame.provider.name : 'questa fonte';
   btn.classList.toggle('voted', voted);
-  btn.textContent = voted ? '🌟' : '⭐';
   btn.setAttribute('aria-pressed', String(voted));
   btn.setAttribute('aria-label', voted ? `Togli il voto di oggi a ${name}` : `Vota ${name} per oggi`);
 }
@@ -584,6 +583,10 @@ document.getElementById('settings').addEventListener('click', () => {
   openModal(document.getElementById('modal'));
 });
 
+document.getElementById('closeSettingsBtn').addEventListener('click', () => {
+  closeModal(document.getElementById('modal'));
+});
+
 document.getElementById('voteToggle').addEventListener('change', (e) => {
   votingEnabled = e.target.checked;
   localStorage.setItem('votingEnabled', votingEnabled);
@@ -690,6 +693,17 @@ function localDateString(date) {
   return date.toLocaleDateString('sv-SE', { timeZone: 'Europe/Rome' }); // formato YYYY-MM-DD
 }
 
+function svgIcon(id) {
+  const ns = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(ns, 'svg');
+  svg.setAttribute('class', 'icon');
+  svg.setAttribute('aria-hidden', 'true');
+  const use = document.createElementNS(ns, 'use');
+  use.setAttribute('href', `#${id}`);
+  svg.appendChild(use);
+  return svg;
+}
+
 function el(tag, className, text) {
   const node = document.createElement(tag);
   if (className) node.className = className;
@@ -746,10 +760,10 @@ async function geocodeCity(city) {
   return result;
 }
 
-const forecastCache = new Map(); // chiave: lat,lon,data -> { time, data }
+const forecastCache = new Map(); // chiave: lat,lon -> { time, data } con tutti i giorni
 
-async function fetchModelForecast(place, date) {
-  const key = `${place.lat},${place.lon},${date}`;
+async function fetchModelForecast(place) {
+  const key = `${place.lat},${place.lon}`;
   const cached = forecastCache.get(key);
   if (cached && Date.now() - cached.time < 30 * 60 * 1000) return cached.data;
 
@@ -759,8 +773,7 @@ async function fetchModelForecast(place, date) {
     hourly: 'temperature_2m,precipitation,precipitation_probability,weather_code',
     models: forecastModels.map(m => m.id).join(','),
     timezone: 'Europe/Rome',
-    start_date: date,
-    end_date: date
+    forecast_days: String(AGENT_DAYS)
   });
   const data = await fetchJSON(url);
   forecastCache.set(key, { time: Date.now(), data });
@@ -768,7 +781,7 @@ async function fetchModelForecast(place, date) {
 }
 
 // Riassume le ore di una fascia per un singolo modello
-function summarizeModelSlot(hourly, model, slot) {
+function summarizeModelSlot(hourly, model, slot, date) {
   const pick = name => hourly[`${name}_${model.id}`] || [];
   const temps = pick('temperature_2m');
   const rains = pick('precipitation');
@@ -776,8 +789,8 @@ function summarizeModelSlot(hourly, model, slot) {
   const codes = pick('weather_code');
 
   const idx = hourly.time
-    .map((t, i) => ({ h: parseInt(t.slice(11, 13), 10), i }))
-    .filter(x => x.h >= slot.from && x.h < slot.to && temps[x.i] != null)
+    .map((t, i) => ({ d: t.slice(0, 10), h: parseInt(t.slice(11, 13), 10), i }))
+    .filter(x => x.d === date && x.h >= slot.from && x.h < slot.to && temps[x.i] != null)
     .map(x => x.i);
   if (idx.length < 3) return null; // modello senza dati per questa fascia (es. oltre il suo orizzonte)
 
@@ -918,13 +931,43 @@ function renderAgentDays() {
     btn.dataset.label = i === 0 ? 'Oggi' : i === 1 ? 'Domani'
       : d.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Europe/Rome' });
     btn.setAttribute('aria-pressed', String(value === agentSelectedDate));
-    btn.addEventListener('click', () => {
-      agentSelectedDate = value;
-      container.querySelectorAll('.day-chip').forEach(b => b.setAttribute('aria-pressed', String(b === btn)));
-      runAgent();
-    });
+    btn.addEventListener('click', () => selectAgentDay(i));
     container.appendChild(btn);
   }
+}
+
+// Cambia giorno (da chip, swipe o frecce) con un'animazione nella direzione giusta
+function selectAgentDay(index) {
+  const chips = [...document.querySelectorAll('.day-chip')];
+  const current = chips.findIndex(b => b.dataset.date === agentSelectedDate);
+  const target = Math.max(0, Math.min(chips.length - 1, index));
+  if (target === current) return false;
+
+  agentSelectedDate = chips[target].dataset.date;
+  chips.forEach((b, i) => b.setAttribute('aria-pressed', String(i === target)));
+  chips[target].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+
+  const result = document.getElementById('agentResult');
+  result.classList.remove('slide-from-right', 'slide-from-left');
+  void result.offsetWidth; // fa ripartire l'animazione
+  result.classList.add(target > current ? 'slide-from-right' : 'slide-from-left');
+  runAgent();
+  return true;
+}
+
+function setAgentCity(text) {
+  const p = document.getElementById('agentCity');
+  p.innerHTML = '';
+  const icon = svgIcon('i-place');
+  icon.style.width = '16px';
+  icon.style.height = '16px';
+  p.append(icon, text);
+}
+
+function slotTitle(slot) {
+  const h = el('h4', null, slot.name);
+  h.appendChild(el('small', null, `dalle ${slot.from} alle ${slot.to}`));
+  return h;
 }
 
 function renderSlotCard(c, isToday) {
@@ -935,7 +978,7 @@ function renderSlotCard(c, isToday) {
   const head = el('div', 'slot-head');
   const cat = c.category ? weatherCategories[c.category] : null;
   const icon = cat ? (c.slot.name === 'Sera' ? cat.night : cat.icon) : '❔';
-  head.append(el('span', 'slot-icon', icon), el('h4', null, `${c.slot.name} (${c.slot.from}–${c.slot.to})`));
+  head.append(el('span', 'slot-icon', icon), slotTitle(c.slot));
   if (c.n) head.append(el('span', 'slot-temp', `${Math.round(c.avgTemp)}°`));
   card.appendChild(head);
 
@@ -980,29 +1023,41 @@ function renderSlotCard(c, isToday) {
   return card;
 }
 
+function agentAvatar() {
+  const span = el('span', 'agent-avatar');
+  span.appendChild(svgIcon('i-agent'));
+  return span;
+}
+
 let agentRun = 0;
 
 async function runAgent() {
   const result = document.getElementById('agentResult');
   const runId = ++agentRun;
-  result.innerHTML = '';
-  result.appendChild(el('p', 'agent-loading', '🤖 Sto confrontando i modelli meteo…'));
+  // Il messaggio di attesa compare solo se serve davvero (i giorni successivi sono già in memoria)
+  const loadingTimer = setTimeout(() => {
+    if (runId !== agentRun) return;
+    result.innerHTML = '';
+    result.appendChild(el('p', 'agent-loading', 'Sto confrontando i modelli meteo…'));
+  }, 150);
 
   try {
     const place = await geocodeCity(currentCity);
     if (runId !== agentRun) return;
+    clearTimeout(loadingTimer);
     if (!place) {
       result.innerHTML = '';
       result.appendChild(el('p', 'agent-error', `Non trovo "${prettyCity(currentCity)}". Prova a scrivere il nome ufficiale del comune nelle impostazioni ⚙️.`));
       return;
     }
-    document.getElementById('agentCity').textContent = `📍 ${place.label}`;
+    setAgentCity(place.label);
 
-    const data = await fetchModelForecast(place, agentSelectedDate);
+    const data = await fetchModelForecast(place);
     if (runId !== agentRun) return;
+    clearTimeout(loadingTimer);
 
     const combined = daySlots.map(slot => {
-      const results = forecastModels.map(m => summarizeModelSlot(data.hourly, m, slot));
+      const results = forecastModels.map(m => summarizeModelSlot(data.hourly, m, slot, agentSelectedDate));
       return { slot, results, ...combineSlot(results) };
     });
 
@@ -1012,10 +1067,11 @@ async function runAgent() {
 
     result.innerHTML = '';
     const summary = el('div', 'agent-summary');
-    summary.append(el('span', 'agent-avatar', '🤖'), el('p', null, daySummary(combined, dayLabel.charAt(0).toUpperCase() + dayLabel.slice(1), prettyCity(currentCity))));
+    summary.append(agentAvatar(), el('p', null, daySummary(combined, dayLabel.charAt(0).toUpperCase() + dayLabel.slice(1), prettyCity(currentCity))));
     result.appendChild(summary);
     combined.forEach(c => result.appendChild(renderSlotCard(c, isToday)));
   } catch (e) {
+    clearTimeout(loadingTimer);
     if (runId !== agentRun) return;
     result.innerHTML = '';
     result.appendChild(el('p', 'agent-error', navigator.onLine === false
@@ -1030,11 +1086,69 @@ document.getElementById('agentBtn').addEventListener('click', () => {
   if (!agentSelectedDate || agentSelectedDate < todayStr || agentSelectedDate > lastAllowed) {
     agentSelectedDate = localDateString(new Date(Date.now() + 86400000)); // di default: domani
   }
-  document.getElementById('agentCity').textContent = `📍 ${prettyCity(currentCity)}`;
+  setAgentCity(prettyCity(currentCity));
+  document.getElementById('agentResult').innerHTML = '';
   renderAgentDays();
   openModal(document.getElementById('agentModal'));
   runAgent();
 });
+
+// --- SWIPE TRA I GIORNI ---
+// Trascinando il contenuto a sinistra si va al giorno dopo, a destra al giorno prima.
+(function setupAgentSwipe() {
+  const area = document.getElementById('agentSwipeArea');
+  const result = document.getElementById('agentResult');
+  let startX = 0, startY = 0, dx = 0, axis = null, tracking = false;
+
+  const chipIndex = () => [...document.querySelectorAll('.day-chip')].findIndex(b => b.dataset.date === agentSelectedDate);
+
+  area.addEventListener('touchstart', e => {
+    if (e.touches.length !== 1 || e.target.closest('table')) return;
+    tracking = true;
+    axis = null;
+    dx = 0;
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+  }, { passive: true });
+
+  area.addEventListener('touchmove', e => {
+    if (!tracking) return;
+    const x = e.touches[0].clientX - startX;
+    const y = e.touches[0].clientY - startY;
+    if (!axis && Math.hypot(x, y) > 10) axis = Math.abs(x) > Math.abs(y) * 1.2 ? 'x' : 'y';
+    if (axis !== 'x') return;
+
+    e.preventDefault();
+    const index = chipIndex();
+    const atEdge = (x > 0 && index === 0) || (x < 0 && index === AGENT_DAYS - 1);
+    dx = atEdge ? x * 0.25 : x; // ai bordi oppone resistenza
+    result.classList.remove('slide-from-right', 'slide-from-left');
+    result.style.transition = 'none';
+    result.style.transform = `translateX(${dx}px)`;
+    result.style.opacity = String(1 - Math.min(Math.abs(dx) / 400, 0.5));
+  }, { passive: false });
+
+  const end = () => {
+    if (!tracking) return;
+    tracking = false;
+    result.style.transition = 'transform 0.2s ease-out, opacity 0.2s ease-out';
+    result.style.transform = '';
+    result.style.opacity = '';
+    if (axis === 'x' && Math.abs(dx) > 60) {
+      result.style.transition = '';
+      selectAgentDay(chipIndex() + (dx < 0 ? 1 : -1));
+    }
+  };
+  area.addEventListener('touchend', end);
+  area.addEventListener('touchcancel', end);
+
+  // Da tastiera: frecce sinistra e destra
+  document.getElementById('agentModal').addEventListener('keydown', e => {
+    if (e.target.matches('input, select')) return;
+    if (e.key === 'ArrowRight') selectAgentDay(chipIndex() + 1);
+    if (e.key === 'ArrowLeft') selectAgentDay(chipIndex() - 1);
+  });
+})();
 
 document.getElementById('closeAgentBtn').addEventListener('click', () => {
   closeModal(document.getElementById('agentModal'));
