@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; manifest-src 'self'; connect-src 'self'; worker-src 'self'; frame-src https://www.3bmeteo.com https://www.google.com https://www.ilmeteo.it https://www.meteoeradar.it https://www.meteogiuliacci.it https://www.meteoam.it; object-src 'none'; base-uri 'self'; form-action 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; manifest-src 'self'; connect-src 'self' https://api.open-meteo.com https://geocoding-api.open-meteo.com; worker-src 'self'; frame-src https://www.3bmeteo.com https://www.google.com https://www.ilmeteo.it https://www.meteoeradar.it https://www.meteogiuliacci.it https://www.meteoam.it; object-src 'none'; base-uri 'self'; form-action 'none'">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tripolemme</title>
@@ -26,6 +26,15 @@
     <button type="button" data-index="1">Google</button>
     <button type="button" data-index="2">IlMeteo</button>
   </nav>
+
+  <!-- AGENTE: previsione combinata dei modelli meteo -->
+  <button id="agentBtn" type="button" aria-label="Previsione combinata dei modelli meteo" title="Previsione combinata"
+    aria-haspopup="dialog" aria-controls="agentModal">
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path fill-rule="evenodd"
+        d="M12 1.5a1.5 1.5 0 0 1 .75 2.8V6H17a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V9a3 3 0 0 1 3-3h4.25V4.3A1.5 1.5 0 0 1 12 1.5zM9 10.5a1.75 1.75 0 1 0 0 3.5 1.75 1.75 0 0 0 0-3.5zm6 0a1.75 1.75 0 1 0 0 3.5 1.75 1.75 0 0 0 0-3.5zM9 16v1.5h6V16H9zM1.5 11h1.5v4H1.5zM21 11h1.5v4H21z" />
+    </svg>
+  </button>
 
   <!-- FLOATING BUTTON -->
   <button id="settings" type="button" aria-label="Impostazioni" aria-haspopup="dialog" aria-controls="modal">
@@ -98,6 +107,24 @@
 
         <button id="saveCity" type="button">Salva</button>
       </div>
+    </div>
+  </div>
+
+  <!-- MODALE AGENTE -->
+  <div id="agentModal" class="overlay" role="dialog" aria-modal="true" aria-labelledby="agentTitle">
+    <div class="dialog dialog-agent">
+      <button type="button" class="dialog-close" id="closeAgentBtn" aria-label="Chiudi">✕</button>
+      <h3 id="agentTitle">🤖 Previsione combinata</h3>
+      <p id="agentCity" class="agent-city"></p>
+
+      <div id="agentDays" class="agent-days" role="group" aria-label="Scegli il giorno"></div>
+
+      <div id="agentResult" aria-live="polite"></div>
+
+      <p class="agent-credits">
+        Confronto tra i modelli ECMWF, ICON, GFS, Météo-France e ItaliaMeteo.
+        Dati: <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo.com</a> (CC BY 4.0)
+      </p>
     </div>
   </div>
 

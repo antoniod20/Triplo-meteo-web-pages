@@ -393,7 +393,7 @@ function closeModal(modal) {
 
 document.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
-  const open = ['providersModal', 'modal']
+  const open = ['agentModal', 'providersModal', 'modal']
     .map(id => document.getElementById(id))
     .find(m => m.style.display === 'flex');
   if (open) {
@@ -642,6 +642,406 @@ document.querySelectorAll('.vote-btn').forEach(btn => {
     const fid = btn.dataset.frame;
     handleVote(fid, btn);
   });
+});
+
+// --- AGENTE: PREVISIONE COMBINATA DEI MODELLI ---
+// I siti negli iframe non si possono leggere dal browser, quindi l'agente confronta
+// i modelli meteo da cui partono anche loro, tramite Open-Meteo (gratuito, senza chiavi).
+
+const forecastModels = [
+  { id: 'ecmwf_ifs025', name: 'ECMWF', origin: 'Centro europeo' },
+  { id: 'icon_seamless', name: 'ICON', origin: 'Germania' },
+  { id: 'gfs_seamless', name: 'GFS', origin: 'Stati Uniti' },
+  { id: 'meteofrance_seamless', name: 'Météo-France', origin: 'Francia' },
+  { id: 'italia_meteo_arpae_icon_2i', name: 'ItaliaMeteo', origin: 'Italia' }
+];
+
+const daySlots = [
+  { name: 'Mattina', icon: '🌅', from: 6, to: 12 },
+  { name: 'Pomeriggio', icon: '🏙️', from: 12, to: 18 },
+  { name: 'Sera', icon: '🌙', from: 18, to: 24 }
+];
+
+const AGENT_DAYS = 7; // oggi + 6 giorni
+const RAIN_THRESHOLD = 0.2; // mm in una fascia: sotto questa soglia è "asciutto"
+
+// Categorie dai codici WMO, in ordine di importanza
+const weatherCategories = {
+  sereno: { order: 0, label: 'sereno', icon: '☀️', night: '🌙' },
+  nuvoloso: { order: 1, label: 'poco nuvoloso', icon: '🌤️', night: '☁️' },
+  coperto: { order: 2, label: 'nuvoloso', icon: '☁️', night: '☁️' },
+  nebbia: { order: 3, label: 'nebbioso', icon: '🌫️', night: '🌫️' },
+  pioggia: { order: 4, label: 'pioggia', icon: '🌧️', night: '🌧️', wet: true },
+  neve: { order: 5, label: 'neve', icon: '❄️', night: '❄️', wet: true },
+  temporale: { order: 6, label: 'temporali', icon: '⛈️', night: '⛈️', wet: true }
+};
+
+function codeCategory(code) {
+  if (code >= 95) return 'temporale';
+  if ((code >= 71 && code <= 77) || code === 85 || code === 86) return 'neve';
+  if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) return 'pioggia';
+  if (code === 45 || code === 48) return 'nebbia';
+  if (code === 3) return 'coperto';
+  if (code === 2) return 'nuvoloso';
+  return 'sereno';
+}
+
+function localDateString(date) {
+  return date.toLocaleDateString('sv-SE', { timeZone: 'Europe/Rome' }); // formato YYYY-MM-DD
+}
+
+function el(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined) node.textContent = text;
+  return node;
+}
+
+function fetchJSON(url) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 15000);
+  return fetch(url, { signal: controller.signal })
+    .then(res => {
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json();
+    })
+    .finally(() => clearTimeout(timer));
+}
+
+// Città -> coordinate. Il risultato si salva, così la ricerca si fa una volta sola per città.
+async function geocodeCity(city) {
+  const cache = loadJSON('geoCache', {});
+  if (cache[city]) return cache[city];
+
+  const search = async name => {
+    const url = 'https://geocoding-api.open-meteo.com/v1/search?' +
+      new URLSearchParams({ name, count: '5', language: 'it', countryCode: 'IT', format: 'json' });
+    const data = await fetchJSON(url);
+    const results = data.results || [];
+    return results.find(r => (r.feature_code || '').startsWith('PPL')) || results[0];
+  };
+
+  let place = await search(city);
+
+  // "laquila" o "forli" non vengono trovati: si riprova con il nome ufficiale ISTAT
+  if (!place) {
+    if (!comuni.length) {
+      const list = await fetchJSON('comuni.json').catch(() => []);
+      comuni = list.map(([name, sigla]) => ({ name, sigla, key: normalizeText(name) }));
+    }
+    const key = normalizeText(city).replace(/\s+/g, ' ');
+    const official = comuni.find(c => c.key === key || c.key.replace(/\s+/g, '') === key.replace(/\s+/g, ''));
+    if (official) place = await search(official.name);
+  }
+
+  if (!place) return null;
+
+  const result = {
+    lat: place.latitude,
+    lon: place.longitude,
+    label: place.admin2 && place.admin2 !== place.name ? `${place.name} (${place.admin2})` : place.name
+  };
+  cache[city] = result;
+  try { localStorage.setItem('geoCache', JSON.stringify(cache)); } catch (e) { }
+  return result;
+}
+
+const forecastCache = new Map(); // chiave: lat,lon,data -> { time, data }
+
+async function fetchModelForecast(place, date) {
+  const key = `${place.lat},${place.lon},${date}`;
+  const cached = forecastCache.get(key);
+  if (cached && Date.now() - cached.time < 30 * 60 * 1000) return cached.data;
+
+  const url = 'https://api.open-meteo.com/v1/forecast?' + new URLSearchParams({
+    latitude: place.lat,
+    longitude: place.lon,
+    hourly: 'temperature_2m,precipitation,precipitation_probability,weather_code',
+    models: forecastModels.map(m => m.id).join(','),
+    timezone: 'Europe/Rome',
+    start_date: date,
+    end_date: date
+  });
+  const data = await fetchJSON(url);
+  forecastCache.set(key, { time: Date.now(), data });
+  return data;
+}
+
+// Riassume le ore di una fascia per un singolo modello
+function summarizeModelSlot(hourly, model, slot) {
+  const pick = name => hourly[`${name}_${model.id}`] || [];
+  const temps = pick('temperature_2m');
+  const rains = pick('precipitation');
+  const probs = pick('precipitation_probability');
+  const codes = pick('weather_code');
+
+  const idx = hourly.time
+    .map((t, i) => ({ h: parseInt(t.slice(11, 13), 10), i }))
+    .filter(x => x.h >= slot.from && x.h < slot.to && temps[x.i] != null)
+    .map(x => x.i);
+  if (idx.length < 3) return null; // modello senza dati per questa fascia (es. oltre il suo orizzonte)
+
+  const temp = idx.reduce((s, i) => s + temps[i], 0) / idx.length;
+  const rain = idx.reduce((s, i) => s + (rains[i] || 0), 0);
+  const probValues = idx.map(i => probs[i]).filter(v => v != null);
+  const prob = probValues.length ? Math.max(...probValues) : null;
+
+  // Categoria: la più frequente; quelle "bagnate" contano solo se piove davvero
+  const counts = {};
+  idx.forEach(i => {
+    if (codes[i] == null) return;
+    const cat = codeCategory(codes[i]);
+    counts[cat] = (counts[cat] || 0) + 1;
+  });
+  const wet = rain >= RAIN_THRESHOLD;
+  let candidates = Object.keys(counts).filter(c => Boolean(weatherCategories[c].wet) === wet);
+  if (!candidates.length) candidates = wet ? ['pioggia'] : ['coperto'];
+  const category = wet
+    ? candidates.sort((a, b) => weatherCategories[b].order - weatherCategories[a].order)[0]
+    : candidates.sort((a, b) => (counts[b] - counts[a]) || (weatherCategories[b].order - weatherCategories[a].order))[0];
+
+  return { model, temp, rain, prob, category, wet };
+}
+
+function rainIntensity(mm) {
+  if (mm < 1) return 'debole';
+  if (mm < 5) return 'moderata';
+  return 'forte';
+}
+
+function wetPhrase(category, mm) {
+  if (category === 'temporale') return 'temporali';
+  if (category === 'neve') return 'neve';
+  return `pioggia ${rainIntensity(mm)}`;
+}
+
+function formatMm(mm) {
+  return `${mm.toFixed(1).replace('.', ',')} mm`;
+}
+
+// Mette insieme i modelli di una fascia e scrive il verdetto
+function combineSlot(results) {
+  const valid = results.filter(Boolean);
+  const n = valid.length;
+  if (!n) return { n: 0, verdict: 'nodata', text: 'Nessun modello ha ancora dati per questa fascia.' };
+
+  const wetModels = valid.filter(r => r.wet);
+  const r = wetModels.length;
+  const ratio = r / n;
+  const temps = valid.map(v => v.temp);
+  const avgTemp = temps.reduce((a, b) => a + b, 0) / n;
+  const avgRainWet = r ? wetModels.reduce((s, v) => s + v.rain, 0) / r : 0;
+
+  // Categoria più votata tra i modelli che sono d'accordo con la maggioranza
+  const pool = ratio >= 0.5 ? wetModels : valid.filter(v => !v.wet);
+  const votes = {};
+  pool.forEach(v => { votes[v.category] = (votes[v.category] || 0) + 1; });
+  const category = Object.keys(votes)
+    .sort((a, b) => (votes[b] - votes[a]) || (weatherCategories[b].order - weatherCategories[a].order))[0];
+  const catLabel = weatherCategories[category].label;
+  const wetText = r ? wetPhrase(wetModels.map(v => v.category)
+    .sort((a, b) => weatherCategories[b].order - weatherCategories[a].order)[0], avgRainWet) : '';
+
+  let verdict, text;
+  if (r === 0) {
+    verdict = 'dry';
+    text = n === 1
+      ? `L'unico modello disponibile prevede tempo asciutto, cielo ${catLabel}.`
+      : `Tutti e ${n} i modelli concordano: niente pioggia, cielo ${catLabel}.`;
+  } else if (r === n) {
+    verdict = 'wet';
+    text = n === 1
+      ? `L'unico modello disponibile prevede ${wetText} (circa ${formatMm(avgRainWet)}).`
+      : `Tutti e ${n} i modelli prevedono ${wetText}, in media ${formatMm(avgRainWet)}.`;
+  } else if (ratio >= 0.6) {
+    verdict = 'likely';
+    text = `${r} modelli su ${n} prevedono ${wetText} (in media ${formatMm(avgRainWet)}): è probabile che piova.`;
+  } else if (ratio > 0.4) {
+    verdict = 'uncertain';
+    text = `Modelli divisi: ${r} su ${n} prevedono ${wetText}, gli altri tempo asciutto. Meglio avere l'ombrello a portata di mano.`;
+  } else {
+    verdict = 'mostlydry';
+    text = `Solo ${r === 1 ? 'un modello' : `${r} modelli`} su ${n} ${r === 1 ? 'prevede' : 'prevedono'} ${wetText}: probabilmente asciutto, cielo ${catLabel}.`;
+  }
+
+  return {
+    n, r, verdict, text, category, avgTemp,
+    minTemp: Math.min(...temps),
+    maxTemp: Math.max(...temps)
+  };
+}
+
+const verdictBadges = {
+  dry: { label: 'Asciutto', cls: 'badge-dry' },
+  mostlydry: { label: 'Probabilmente asciutto', cls: 'badge-dry' },
+  uncertain: { label: 'Incerto', cls: 'badge-uncertain' },
+  likely: { label: 'Pioggia probabile', cls: 'badge-wet' },
+  wet: { label: 'Pioggia quasi certa', cls: 'badge-wet' },
+  nodata: { label: 'Nessun dato', cls: 'badge-nodata' }
+};
+
+function daySummary(combined, dayLabel, placeName) {
+  const wetSlots = combined.filter(c => c.verdict === 'wet' || c.verdict === 'likely').map(c => c.slot.name.toLowerCase());
+  const doubtSlots = combined.filter(c => c.verdict === 'uncertain').map(c => c.slot.name.toLowerCase());
+  const list = names => names.length > 1 ? `${names.slice(0, -1).join(', ')} e ${names[names.length - 1]}` : names[0];
+  const withData = combined.filter(c => c.n);
+  if (!withData.length) return `Per ${dayLabel.toLowerCase()} i modelli non hanno ancora dati.`;
+
+  let text;
+  if (wetSlots.length === withData.length) text = 'pioggia probabile per tutta la giornata';
+  else if (wetSlots.length) text = `pioggia probabile di ${list(wetSlots)}`;
+  else if (doubtSlots.length) text = `giornata in gran parte asciutta, ma incerta di ${list(doubtSlots)}`;
+  else text = 'giornata asciutta';
+
+  if (wetSlots.length && doubtSlots.length) text += `, incerto di ${list(doubtSlots)}`;
+
+  const temps = withData.map(c => c.avgTemp);
+  return `${dayLabel} a ${placeName}: ${text}. Temperature tra ${Math.round(Math.min(...temps))}° e ${Math.round(Math.max(...temps))}°.`;
+}
+
+let agentSelectedDate = null;
+
+function renderAgentDays() {
+  const container = document.getElementById('agentDays');
+  container.innerHTML = '';
+  const today = new Date();
+
+  for (let i = 0; i < AGENT_DAYS; i++) {
+    const d = new Date(today.getTime() + i * 86400000);
+    const value = localDateString(d);
+    const label = i === 0 ? 'Oggi' : i === 1 ? 'Domani'
+      : d.toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', timeZone: 'Europe/Rome' });
+
+    const btn = el('button', 'day-chip', label.charAt(0).toUpperCase() + label.slice(1));
+    btn.type = 'button';
+    btn.dataset.date = value;
+    btn.dataset.label = i === 0 ? 'Oggi' : i === 1 ? 'Domani'
+      : d.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Europe/Rome' });
+    btn.setAttribute('aria-pressed', String(value === agentSelectedDate));
+    btn.addEventListener('click', () => {
+      agentSelectedDate = value;
+      container.querySelectorAll('.day-chip').forEach(b => b.setAttribute('aria-pressed', String(b === btn)));
+      runAgent();
+    });
+    container.appendChild(btn);
+  }
+}
+
+function renderSlotCard(c, isToday) {
+  const card = el('section', 'slot-card');
+  const nowHour = parseInt(new Date().toLocaleTimeString('it-IT', { hour: '2-digit', hour12: false, timeZone: 'Europe/Rome' }), 10);
+  if (isToday && nowHour >= c.slot.to) card.classList.add('slot-past');
+
+  const head = el('div', 'slot-head');
+  const cat = c.category ? weatherCategories[c.category] : null;
+  const icon = cat ? (c.slot.name === 'Sera' ? cat.night : cat.icon) : '❔';
+  head.append(el('span', 'slot-icon', icon), el('h4', null, `${c.slot.name} (${c.slot.from}–${c.slot.to})`));
+  if (c.n) head.append(el('span', 'slot-temp', `${Math.round(c.avgTemp)}°`));
+  card.appendChild(head);
+
+  const badge = verdictBadges[c.verdict];
+  card.appendChild(el('span', `badge ${badge.cls}`, badge.label));
+  if (isToday && nowHour >= c.slot.to) card.appendChild(el('span', 'badge badge-nodata', 'già passata'));
+  card.appendChild(el('p', 'slot-text', c.text));
+
+  if (c.n) {
+    const details = el('details', 'slot-details');
+    details.appendChild(el('summary', null, 'Cosa dice ogni modello'));
+    const table = el('table');
+    const thead = el('tr');
+    ['Modello', '', 'Temp.', 'Pioggia', 'Prob.'].forEach(h => thead.appendChild(el('th', null, h)));
+    table.appendChild(thead);
+
+    c.results.forEach((r, i) => {
+      const row = el('tr');
+      const model = forecastModels[i];
+      const nameCell = el('td');
+      nameCell.append(el('strong', null, model.name), el('small', null, model.origin));
+      row.appendChild(nameCell);
+      if (!r) {
+        const cell = el('td', 'muted', 'nessun dato per questo giorno');
+        cell.colSpan = 4;
+        row.appendChild(cell);
+      } else {
+        const rc = weatherCategories[r.category];
+        row.append(
+          el('td', null, c.slot.name === 'Sera' ? rc.night : rc.icon),
+          el('td', null, `${Math.round(r.temp)}°`),
+          el('td', null, r.wet ? formatMm(r.rain) : '—'),
+          el('td', null, r.prob == null ? '—' : `${r.prob}%`)
+        );
+      }
+      table.appendChild(row);
+    });
+    details.appendChild(table);
+    card.appendChild(details);
+  }
+
+  return card;
+}
+
+let agentRun = 0;
+
+async function runAgent() {
+  const result = document.getElementById('agentResult');
+  const runId = ++agentRun;
+  result.innerHTML = '';
+  result.appendChild(el('p', 'agent-loading', '🤖 Sto confrontando i modelli meteo…'));
+
+  try {
+    const place = await geocodeCity(currentCity);
+    if (runId !== agentRun) return;
+    if (!place) {
+      result.innerHTML = '';
+      result.appendChild(el('p', 'agent-error', `Non trovo "${prettyCity(currentCity)}". Prova a scrivere il nome ufficiale del comune nelle impostazioni ⚙️.`));
+      return;
+    }
+    document.getElementById('agentCity').textContent = `📍 ${place.label}`;
+
+    const data = await fetchModelForecast(place, agentSelectedDate);
+    if (runId !== agentRun) return;
+
+    const combined = daySlots.map(slot => {
+      const results = forecastModels.map(m => summarizeModelSlot(data.hourly, m, slot));
+      return { slot, results, ...combineSlot(results) };
+    });
+
+    const chip = document.querySelector(`.day-chip[data-date="${agentSelectedDate}"]`);
+    const dayLabel = chip ? chip.dataset.label : agentSelectedDate;
+    const isToday = agentSelectedDate === localDateString(new Date());
+
+    result.innerHTML = '';
+    const summary = el('div', 'agent-summary');
+    summary.append(el('span', 'agent-avatar', '🤖'), el('p', null, daySummary(combined, dayLabel.charAt(0).toUpperCase() + dayLabel.slice(1), prettyCity(currentCity))));
+    result.appendChild(summary);
+    combined.forEach(c => result.appendChild(renderSlotCard(c, isToday)));
+  } catch (e) {
+    if (runId !== agentRun) return;
+    result.innerHTML = '';
+    result.appendChild(el('p', 'agent-error', navigator.onLine === false
+      ? 'Sei offline: per la previsione combinata serve la connessione.'
+      : 'Non riesco a contattare il servizio meteo. Riprova tra qualche istante.'));
+  }
+}
+
+document.getElementById('agentBtn').addEventListener('click', () => {
+  const todayStr = localDateString(new Date());
+  const lastAllowed = localDateString(new Date(Date.now() + (AGENT_DAYS - 1) * 86400000));
+  if (!agentSelectedDate || agentSelectedDate < todayStr || agentSelectedDate > lastAllowed) {
+    agentSelectedDate = localDateString(new Date(Date.now() + 86400000)); // di default: domani
+  }
+  document.getElementById('agentCity').textContent = `📍 ${prettyCity(currentCity)}`;
+  renderAgentDays();
+  openModal(document.getElementById('agentModal'));
+  runAgent();
+});
+
+document.getElementById('closeAgentBtn').addEventListener('click', () => {
+  closeModal(document.getElementById('agentModal'));
+});
+
+document.getElementById('agentModal').addEventListener('click', e => {
+  if (e.target.id === 'agentModal') closeModal(e.target);
 });
 
 // --- PWA / OFFLINE ---
