@@ -1,5 +1,5 @@
 // Cambia la versione a ogni rilascio: la cache vecchia viene cancellata in automatico
-const CACHE_VERSION = 'meteo-cache-v7';
+const CACHE_VERSION = 'meteo-cache-v8';
 
 const APP_SHELL = [
   './',
