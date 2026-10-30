@@ -1,20 +1,20 @@
 /* ==========================================================================
    Tripolemme — tema Material 3 (Material You)
-   Colori costruiti sul giallo del marchio (#FDD835), con il blu solo per la pioggia.
+   Colori costruiti sul giallo del marchio (#FBC02D), con il blu solo per la pioggia.
    ========================================================================== */
 
 :root {
   color-scheme: light dark;
 
   /* Il giallo del marchio riempie gli elementi principali; l'oliva serve per testi e icone leggibili */
-  --brand: #fdd835;
-  --on-brand: #221b00;
+  --brand: #fbc02d;
+  --on-brand: #261a00;
 
-  --md-primary: #6d5e00;
+  --md-primary: #7a5900;
   --md-on-primary: #ffffff;
-  --md-primary-container: #ffeaa3;
-  --md-on-primary-container: #221b00;
-  --md-secondary-container: #ede1bb;
+  --md-primary-container: #ffdf9e;
+  --md-on-primary-container: #261a00;
+  --md-secondary-container: #f2e1bb;
   --md-on-secondary-container: #1d1c08;
   --md-tertiary-container: #d5e3ff;
   --md-on-tertiary-container: #001b3c;
@@ -39,22 +39,22 @@
   --md-elevation-1: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px 1px rgba(0, 0, 0, 0.15);
   --md-elevation-3: 0 1px 3px rgba(0, 0, 0, 0.3), 0 4px 8px 3px rgba(0, 0, 0, 0.15);
 
-  --nav-h: 80px;
+  --toolbar-h: 64px;
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --font: Roboto, "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --brand: #fdd835;
-    --on-brand: #221b00;
+    --brand: #fbc02d;
+    --on-brand: #261a00;
 
-    --md-primary: #fdd835;
+    --md-primary: #fbc02d;
     --md-on-primary: #323200;
-    --md-primary-container: #524600;
-    --md-on-primary-container: #ffeaa3;
-    --md-secondary-container: #4f4630;
-    --md-on-secondary-container: #ede1bb;
+    --md-primary-container: #5c4200;
+    --md-on-primary-container: #ffdf9e;
+    --md-secondary-container: #554430;
+    --md-on-secondary-container: #f2e1bb;
     --md-tertiary-container: #284777;
     --md-on-tertiary-container: #d5e3ff;
     --md-success-container: #1f4f1a;
@@ -296,38 +296,46 @@ body.voting-off .vote-btn {
   box-shadow: var(--md-elevation-3);
 }
 
-/* ---------- NAVIGATION BAR (mobile) ---------- */
+/* ---------- FLOATING TOOLBAR (mobile, Material 3 Expressive) ----------
+   Pillola centrata e staccata dal bordo; i FAB stanno sopra, a destra. */
 
 .tab-bar {
   display: none;
   position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: calc(var(--nav-h) + var(--safe-bottom));
-  padding: 12px 8px calc(12px + var(--safe-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(16px + var(--safe-bottom));
+  width: calc(100% - 32px);
+  max-width: 480px;
+  height: var(--toolbar-h);
+  padding: 8px;
+  border-radius: calc(var(--toolbar-h) / 2);
   background: var(--md-surface-container);
-  gap: 8px;
-  justify-content: space-around;
+  box-shadow: var(--md-elevation-3);
+  gap: 4px;
   align-items: center;
   z-index: 900;
 }
 
 .tab-bar button {
   position: relative;
-  flex: 1;
-  max-width: 160px;
-  height: 40px;
+  flex: 1 1 auto; /* larghezza in base al nome: i nomi lunghi non vengono tagliati */
+  min-width: 0;
+  height: 48px;
+  padding: 0 8px;
   border: none;
-  border-radius: 20px;
+  border-radius: 24px;
   background: transparent;
   color: var(--md-on-surface-variant);
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   font-weight: 500;
-  letter-spacing: 0.01em;
+  white-space: nowrap;
+  text-overflow: ellipsis;
   overflow: hidden;
-  transition: background-color 0.2s, color 0.2s;
+  transition: background-color 0.25s, color 0.25s;
 }
+
+
 
 .tab-bar button.active {
   background: var(--brand);
@@ -1122,13 +1130,15 @@ body.voting-off .vote-btn {
     display: flex;
   }
 
-  .container {
-    height: calc(100vh - var(--nav-h) - var(--safe-bottom));
-    height: calc(100dvh - var(--nav-h) - var(--safe-bottom));
+  /* I siti scorrono anche sotto la barra flottante */
+
+  /* FAB sopra la barra, a destra */
+  .fab-stack {
+    bottom: calc(16px + var(--toolbar-h) + 12px + var(--safe-bottom));
   }
 
-  .fab-stack {
-    bottom: calc(var(--nav-h) + 16px + var(--safe-bottom));
+  .frame-actions {
+    bottom: calc(16px + var(--toolbar-h) + 12px + var(--safe-bottom));
   }
 
   /* I pannelli diventano bottom sheet: si aprono dal basso, a tutta larghezza */
