@@ -1,5 +1,5 @@
 // Cambia la versione a ogni rilascio: la cache vecchia viene cancellata in automatico
-const CACHE_VERSION = 'meteo-cache-v6';
+const CACHE_VERSION = 'meteo-cache-v7';
 
 const APP_SHELL = [
   './',
@@ -35,7 +35,8 @@ self.addEventListener('fetch', event => {
   if (request.method !== 'GET' || new URL(request.url).origin !== self.location.origin) return;
 
   event.respondWith(
-    fetch(request)
+    // no-cache: chiede sempre al server se il file è cambiato, così gli aggiornamenti arrivano subito
+    fetch(request, { cache: 'no-cache' })
       .then(response => {
         if (response.ok) {
           const copy = response.clone();

@@ -402,6 +402,79 @@ document.addEventListener('keydown', e => {
   }
 });
 
+// --- BOTTOM SHEET: TRASCINA IN BASSO PER CHIUDERE (solo mobile) ---
+// Si chiude trascinando dalla maniglia o dall'intestazione, oppure da qualsiasi punto
+// quando il contenuto è già scorso fino in cima.
+function setupSheetDrag(overlay) {
+  const sheet = overlay.querySelector('.sheet');
+  if (!sheet) return;
+  let startX = 0, startY = 0, startTime = 0, dy = 0;
+  let tracking = false, decided = false, dragging = false, fromHandle = false;
+
+  const reset = () => {
+    sheet.style.transition = '';
+    sheet.style.transform = '';
+    overlay.style.backgroundColor = '';
+  };
+
+  sheet.addEventListener('touchstart', e => {
+    if (e.touches.length !== 1 || !matchMedia('(max-width: 768px)').matches) return;
+    if (e.target.closest('.suggestions, .agent-days, input, select, table')) return;
+    tracking = true;
+    decided = false;
+    dragging = false;
+    dy = 0;
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    startTime = Date.now();
+    fromHandle = Boolean(e.target.closest('.sheet-handle, .dialog-header'));
+  }, { passive: true });
+
+  sheet.addEventListener('touchmove', e => {
+    if (!tracking) return;
+    const x = e.touches[0].clientX - startX;
+    const y = e.touches[0].clientY - startY;
+
+    if (!decided) {
+      if (Math.hypot(x, y) < 8) return;
+      decided = true;
+      // Solo verso il basso, in verticale, e senza rubare lo scorrimento del contenuto
+      dragging = y > 0 && Math.abs(y) > Math.abs(x) * 1.2 && (fromHandle || sheet.scrollTop <= 0);
+      if (!dragging) { tracking = false; return; }
+    }
+
+    e.preventDefault();
+    dy = Math.max(0, y);
+    sheet.style.transition = 'none';
+    sheet.style.transform = `translateY(${dy}px)`;
+    const fade = Math.max(0, 1 - dy / sheet.offsetHeight);
+    overlay.style.backgroundColor = `rgba(0, 0, 0, ${(0.32 * fade).toFixed(3)})`;
+  }, { passive: false });
+
+  const end = () => {
+    if (!tracking) return;
+    tracking = false;
+    if (!dragging) return;
+
+    const velocity = dy / Math.max(1, Date.now() - startTime); // px/ms
+    const shouldClose = dy > sheet.offsetHeight * 0.25 || (dy > 40 && velocity > 0.5);
+
+    sheet.style.transition = 'transform 0.2s cubic-bezier(0.3, 0, 0.8, 0.15)';
+    if (shouldClose) {
+      sheet.style.transform = 'translateY(100%)';
+      setTimeout(() => { closeModal(overlay); reset(); }, 200);
+    } else {
+      sheet.style.transform = '';
+      overlay.style.backgroundColor = '';
+      setTimeout(reset, 200);
+    }
+  };
+  sheet.addEventListener('touchend', end);
+  sheet.addEventListener('touchcancel', end);
+}
+
+['modal', 'agentModal'].forEach(id => setupSheetDrag(document.getElementById(id)));
+
 // --- TAB BAR & RESPONSIVE ---
 
 function renderTabButtons() {

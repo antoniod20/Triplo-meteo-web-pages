@@ -3,8 +3,8 @@
   "short_name": "TripolM",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#87CEEB",
-  "theme_color": "#FBC02D",
+  "background_color": "#fdf9ec",
+  "theme_color": "#fdf9ec",
   "description": "Visualizza 3 siti meteo in un’unica interfaccia responsive.",
   "icons": [
     {
