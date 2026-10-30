@@ -843,7 +843,7 @@ async function fetchModelForecast(place) {
   const url = 'https://api.open-meteo.com/v1/forecast?' + new URLSearchParams({
     latitude: place.lat,
     longitude: place.lon,
-    hourly: 'temperature_2m,precipitation,precipitation_probability,weather_code',
+    hourly: 'temperature_2m,precipitation,precipitation_probability,weather_code,wind_speed_10m,wind_gusts_10m',
     models: forecastModels.map(m => m.id).join(','),
     timezone: 'Europe/Rome',
     forecast_days: String(AGENT_DAYS)
@@ -860,6 +860,8 @@ function summarizeModelSlot(hourly, model, slot, date) {
   const rains = pick('precipitation');
   const probs = pick('precipitation_probability');
   const codes = pick('weather_code');
+  const winds = pick('wind_speed_10m');
+  const gusts = pick('wind_gusts_10m');
 
   const idx = hourly.time
     .map((t, i) => ({ d: t.slice(0, 10), h: parseInt(t.slice(11, 13), 10), i }))
@@ -886,7 +888,24 @@ function summarizeModelSlot(hourly, model, slot, date) {
     ? candidates.sort((a, b) => weatherCategories[b].order - weatherCategories[a].order)[0]
     : candidates.sort((a, b) => (counts[b] - counts[a]) || (weatherCategories[b].order - weatherCategories[a].order))[0];
 
-  return { model, temp, rain, prob, category, wet };
+  // Vento: il massimo della fascia, perché è quello che si "sente"
+  const windValues = idx.map(i => winds[i]).filter(v => v != null);
+  const gustValues = idx.map(i => gusts[i]).filter(v => v != null);
+  const windMax = windValues.length ? Math.max(...windValues) : null;
+  const gustMax = gustValues.length ? Math.max(...gustValues) : null;
+
+  // Dettaglio ora per ora, per chi vuole controllare un orario preciso
+  const hours = idx.map(i => ({
+    hour: parseInt(hourly.time[i].slice(11, 13), 10),
+    temp: temps[i],
+    rain: rains[i],
+    prob: probs[i],
+    wind: winds[i],
+    gust: gusts[i],
+    category: codes[i] == null ? null : codeCategory(codes[i])
+  }));
+
+  return { model, temp, rain, prob, category, wet, hours, windMax, gustMax };
 }
 
 function rainIntensity(mm) {
@@ -906,6 +925,23 @@ function formatMm(mm) {
 }
 
 // Mette insieme i modelli di una fascia e scrive il verdetto
+// Livelli del vento medio a 10 m, come nei bollettini italiani
+const windLevels = [
+  { max: 20, label: 'Vento debole', cls: 'wind-light', key: 'debole' },
+  { max: 40, label: 'Vento moderato', cls: 'wind-moderate', key: 'moderato' },
+  { max: 62, label: 'Vento forte', cls: 'wind-strong', key: 'forte' },
+  { max: Infinity, label: 'Burrasca', cls: 'wind-gale', key: 'burrasca' }
+];
+
+function combineWind(valid) {
+  const mean = values => values.length ? values.reduce((a, b) => a + b, 0) / values.length : null;
+  const speed = mean(valid.map(v => v.windMax).filter(v => v != null));
+  if (speed == null) return null;
+  const gust = mean(valid.map(v => v.gustMax).filter(v => v != null));
+  const level = windLevels.find(l => speed < l.max);
+  return { speed, gust, level };
+}
+
 function combineSlot(results) {
   const valid = results.filter(Boolean);
   const n = valid.length;
@@ -952,6 +988,7 @@ function combineSlot(results) {
 
   return {
     n, r, verdict, text, category, avgTemp,
+    wind: combineWind(valid),
     minTemp: Math.min(...temps),
     maxTemp: Math.max(...temps)
   };
@@ -982,7 +1019,16 @@ function daySummary(combined, dayLabel, placeName) {
   if (wetSlots.length && doubtSlots.length) text += `, incerto di ${list(doubtSlots)}`;
 
   const temps = withData.map(c => c.avgTemp);
-  return `${dayLabel} a ${placeName}: ${text}. Temperature tra ${Math.round(Math.min(...temps))}° e ${Math.round(Math.max(...temps))}°.`;
+  let windText = '';
+  const windy = withData.filter(c => c.wind && (c.wind.level.key === 'forte' || c.wind.level.key === 'burrasca'));
+  if (windy.length) {
+    const worst = windy.some(c => c.wind.level.key === 'burrasca') ? 'vento di burrasca' : 'vento forte';
+    windText = windy.length === withData.length ? ` Attenzione: ${worst} per tutta la giornata.` : ` Attenzione: ${worst} di ${list(windy.map(c => c.slot.name.toLowerCase()))}.`;
+  }
+  const tMin = Math.round(Math.min(...temps));
+  const tMax = Math.round(Math.max(...temps));
+  const tempText = tMin === tMax ? `Temperature intorno ai ${tMin}°` : `Temperature tra ${tMin}° e ${tMax}°`;
+  return `${dayLabel} a ${placeName}: ${text}. ${tempText}.${windText}`;
 }
 
 let agentSelectedDate = null;
@@ -1037,6 +1083,31 @@ function setAgentCity(text) {
   p.append(icon, text);
 }
 
+function renderHourlyTable(hours) {
+  const table = el('table', 'hourly');
+  const head = el('tr');
+  ['Ora', '', 'Temp.', 'Pioggia', 'Prob.', 'Vento'].forEach(h => head.appendChild(el('th', null, h)));
+  table.appendChild(head);
+
+  hours.forEach(h => {
+    const row = el('tr');
+    const cat = h.category ? weatherCategories[h.category] : null;
+    const night = h.hour >= 19 || h.hour < 7;
+    const iconCell = el('td', 'hourly-icon', cat ? (night ? cat.night : cat.icon) : '—');
+    if (cat) iconCell.title = cat.label;
+    row.append(
+      el('td', 'hourly-time', `${String(h.hour).padStart(2, '0')}:00`),
+      iconCell,
+      el('td', null, h.temp == null ? '—' : `${Math.round(h.temp)}°`),
+      el('td', h.rain > 0 ? 'hourly-rain' : null, h.rain > 0 ? formatMm(h.rain) : '—'),
+      el('td', null, h.prob == null ? '—' : `${h.prob}%`),
+      el('td', null, h.wind == null ? '—' : `${Math.round(h.wind)}${h.gust != null && h.gust >= 40 ? ` (${Math.round(h.gust)})` : ''} km/h`)
+    );
+    table.appendChild(row);
+  });
+  return table;
+}
+
 function slotTitle(slot) {
   const h = el('h4', null, slot.name);
   h.appendChild(el('small', null, `dalle ${slot.from} alle ${slot.to}`));
@@ -1056,40 +1127,63 @@ function renderSlotCard(c, isToday) {
   card.appendChild(head);
 
   const badge = verdictBadges[c.verdict];
-  card.appendChild(el('span', `badge ${badge.cls}`, badge.label));
-  if (isToday && nowHour >= c.slot.to) card.appendChild(el('span', 'badge badge-nodata', 'già passata'));
+  const chips = el('div', 'slot-chips');
+  chips.appendChild(el('span', `badge ${badge.cls}`, badge.label));
+  if (c.wind) {
+    const w = c.wind;
+    const windChip = el('span', `badge badge-wind ${w.level.cls}`);
+    let label = `${w.level.label} · ${Math.round(w.speed)} km/h`;
+    if (w.gust != null && w.gust >= 40) label += `, raffiche ${Math.round(w.gust)}`;
+    windChip.append(svgIcon('i-air'), label);
+    windChip.title = 'Vento massimo medio della fascia secondo i modelli';
+    chips.appendChild(windChip);
+  }
+  card.appendChild(chips);
+  if (isToday && nowHour >= c.slot.to) chips.appendChild(el('span', 'badge badge-nodata', 'già passata'));
   card.appendChild(el('p', 'slot-text', c.text));
 
   if (c.n) {
     const details = el('details', 'slot-details');
     details.appendChild(el('summary', null, 'Cosa dice ogni modello'));
-    const table = el('table');
-    const thead = el('tr');
-    ['Modello', '', 'Temp.', 'Pioggia', 'Prob.'].forEach(h => thead.appendChild(el('th', null, h)));
-    table.appendChild(thead);
+
+    const list = el('div', 'model-list');
+    const head = el('div', 'model-row model-head');
+    ['Modello', '', 'Temp.', 'Pioggia', 'Prob.', ''].forEach(h => head.appendChild(el('span', null, h)));
+    list.appendChild(head);
 
     c.results.forEach((r, i) => {
-      const row = el('tr');
       const model = forecastModels[i];
-      const nameCell = el('td');
-      nameCell.append(el('strong', null, model.name), el('small', null, model.origin));
-      row.appendChild(nameCell);
+      const name = el('span', 'model-name');
+      name.append(el('strong', null, model.name), el('small', null, model.origin));
+
       if (!r) {
-        const cell = el('td', 'muted', 'nessun dato per questo giorno');
-        cell.colSpan = 4;
-        row.appendChild(cell);
-      } else {
-        const rc = weatherCategories[r.category];
-        row.append(
-          el('td', null, c.slot.name === 'Sera' ? rc.night : rc.icon),
-          el('td', null, `${Math.round(r.temp)}°`),
-          el('td', null, r.wet ? formatMm(r.rain) : '—'),
-          el('td', null, r.prob == null ? '—' : `${r.prob}%`)
-        );
+        const row = el('div', 'model-row model-empty');
+        row.append(name, el('span', 'muted', 'nessun dato per questo giorno'));
+        list.appendChild(row);
+        return;
       }
-      table.appendChild(row);
+
+      // Ogni modello si espande per mostrare la fascia ora per ora
+      const item = el('details', 'model-item');
+      const row = el('summary', 'model-row');
+      const rc = weatherCategories[r.category];
+      const chevron = el('span', 'model-chevron');
+      chevron.appendChild(svgIcon('i-expand'));
+      row.append(
+        name,
+        el('span', 'model-icon', c.slot.name === 'Sera' ? rc.night : rc.icon),
+        el('span', null, `${Math.round(r.temp)}°`),
+        el('span', null, r.wet ? formatMm(r.rain) : '—'),
+        el('span', null, r.prob == null ? '—' : `${r.prob}%`),
+        chevron
+      );
+      row.setAttribute('aria-label', `${model.name}: mostra il dettaglio ora per ora`);
+      item.appendChild(row);
+      item.appendChild(renderHourlyTable(r.hours));
+      list.appendChild(item);
     });
-    details.appendChild(table);
+
+    details.appendChild(list);
     card.appendChild(details);
   }
 
