@@ -921,6 +921,23 @@ body.voting-off .vote-btn {
   color: var(--md-on-secondary-container);
 }
 
+/* Riga di impostazione con selettore compatto a destra */
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.view-toggle.compact {
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.view-toggle.compact button {
+  padding: 0 16px;
+}
+
 /* In vista settimana non servono giorni in alto né lo swipe */
 .week-view .agent-days,
 .week-view .agent-hint {

@@ -33,6 +33,22 @@ if (typeof votes !== 'object' || Array.isArray(votes)) votes = emptyVotes();
 
 let votingEnabled = loadJSON('votingEnabled', true) !== false;
 
+// Giorno mostrato quando si apre l'agente: 'today' oppure 'tomorrow'
+export function getAgentStartDay() {
+  return loadJSON('agentStartDay', 'today') === 'tomorrow' ? 'tomorrow' : 'today';
+}
+
+function updateAgentStartButtons() {
+  const start = getAgentStartDay();
+  $('agentStartToday').setAttribute('aria-pressed', String(start === 'today'));
+  $('agentStartTomorrow').setAttribute('aria-pressed', String(start === 'tomorrow'));
+}
+
+function setAgentStartDay(value) {
+  saveJSON('agentStartDay', value);
+  updateAgentStartButtons();
+}
+
 const todayIso = () => new Date().toISOString().split('T')[0];
 
 // --- IFRAME ---
@@ -377,6 +393,7 @@ export function initSettings() {
     $('shareFeedback').textContent = '';
     $('cityInput').value = state.currentCity;
     $('voteToggle').checked = votingEnabled;
+    updateAgentStartButtons();
     openModal($('modal'));
   });
   $('closeSettingsBtn').addEventListener('click', () => closeModal($('modal')));
@@ -388,6 +405,8 @@ export function initSettings() {
     updateVotingMode();
   });
   $('resetRanking').addEventListener('click', resetVotes);
+  $('agentStartToday').addEventListener('click', () => setAgentStartDay('today'));
+  $('agentStartTomorrow').addEventListener('click', () => setAgentStartDay('tomorrow'));
   document.querySelectorAll('.vote-btn').forEach(btn => {
     btn.addEventListener('click', e => {
       e.stopPropagation();

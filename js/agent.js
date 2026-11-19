@@ -6,6 +6,7 @@ import { $, el, svgIcon, openModal, closeModal, closeOnBackdrop } from './dom.js
 import { prettyCity, capitalize } from './text.js';
 import { state } from './state.js';
 import { geocodeCity, fetchModelForecast } from './forecast-api.js';
+import { getAgentStartDay } from './settings.js';
 import {
   forecastModels, weatherCategories, verdictBadges, AGENT_DAYS,
   combineDay, daySummary, dayOverview, formatMm
@@ -368,8 +369,10 @@ function setupSwipe() {
 
 export function initAgent() {
   $('agentBtn').addEventListener('click', () => {
+    // Si parte sempre dal giorno scelto nelle impostazioni (oggi o domani), in vista giorno
     const days = agentDays().map(d => d.date);
-    if (!days.includes(selectedDate)) selectedDate = days[1]; // di default: domani
+    selectedDate = getAgentStartDay() === 'tomorrow' ? days[1] : days[0];
+    setView('day');
     setAgentCity(prettyCity(state.currentCity));
     setUpdated(null);
     $('agentResult').innerHTML = '';
