@@ -9,6 +9,8 @@
   <title>Tripolemme</title>
   <link rel="stylesheet" href="style.css">
   <link rel="icon" href="icons/icon.ico">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="color-scheme" content="light dark">
   <!-- Barre di sistema dello stesso colore neutro dell'app, così non risultano "colorate" -->
@@ -218,11 +220,17 @@
         <div>
           <h2 id="agentTitle">Previsione combinata</h2>
           <p id="agentCity" class="agent-city"></p>
+          <p id="agentUpdated" class="agent-updated" role="status"></p>
         </div>
         <button type="button" class="icon-btn" id="closeAgentBtn" aria-label="Chiudi">
           <svg class="icon" aria-hidden="true"><use href="#i-close" /></svg>
         </button>
       </header>
+
+      <div class="view-toggle" role="group" aria-label="Tipo di vista">
+        <button type="button" id="agentViewDay" aria-pressed="true">Giorno</button>
+        <button type="button" id="agentViewWeek" aria-pressed="false">Settimana</button>
+      </div>
 
       <div id="agentDays" class="agent-days" role="group" aria-label="Scegli il giorno"></div>
 
@@ -269,7 +277,7 @@
     </div>
   </div>
 
-  <script src="script.js"></script>
+  <script type="module" src="js/main.js"></script>
 </body>
 
 </html>

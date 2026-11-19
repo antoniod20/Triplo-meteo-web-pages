@@ -1,14 +1,24 @@
 // Cambia la versione a ogni rilascio: la cache vecchia viene cancellata in automatico
-const CACHE_VERSION = 'meteo-cache-v10';
+const CACHE_VERSION = 'meteo-cache-v11';
 
 const APP_SHELL = [
   './',
   './index.html',
   './style.css',
-  './script.js',
+  './js/main.js',
+  './js/settings.js',
+  './js/agent.js',
+  './js/weather.js',
+  './js/forecast-api.js',
+  './js/providers.js',
+  './js/comuni.js',
+  './js/dom.js',
+  './js/state.js',
+  './js/storage.js',
+  './js/text.js',
   './comuni.json',
   './manifest.webmanifest',
-  './icons/icon.png',
+  './icons/icon-192.png',
   './icons/icon.ico'
 ];
 
